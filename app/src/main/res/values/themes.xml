@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.CountAnyThing" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- ADD THIS: Theme for the Splash Screen -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set the splash screen background color -->
+        <item name="windowSplashScreenBackground">@color/your_app_background_color</item>
+
+        <!-- Set the icon to show in the center -->
+        <!-- Use your app's launcher icon or a custom drawable -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+
+        <!-- Set the theme to apply after the splash screen is gone -->
+        <item name="postSplashScreenTheme">@style/Theme.CountAnyThing</item>
+    </style>
+</resources>
