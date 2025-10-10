@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation(libs.compose.material3)
     implementation(libs.androidx.compose.testing)
+    implementation(libs.androidx.compose.ui.geometry)
     // The conflicting line has been removed.
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

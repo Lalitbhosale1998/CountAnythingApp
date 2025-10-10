@@ -1,11 +1,9 @@
 package com.lalit.countanything
 
-import androidx.compose.material3.CenterAlignedTopAppBar
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.SizeTransform
@@ -56,8 +54,6 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -118,12 +114,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -146,21 +139,6 @@ import androidx.compose.ui.unit.width
 import kotlin.io.path.moveTo
 import kotlin.math.PI
 import kotlin.math.sin
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
-import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
-import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
-import com.patrykandpatrick.vico.compose.chart.Chart
-import com.patrykandpatrick.vico.compose.chart.column.columnChart
-import com.patrykandpatrick.vico.core.axis.AxisPosition
-import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
-import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
-import com.patrykandpatrick.vico.core.entry.entryOf
-import java.time.format.TextStyle
 
 
 // Sealed class to represent a cell in our calendar grid
@@ -170,7 +148,6 @@ class MonthDay(day: Int) : CalendarDay(day)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent {
             CountAnyThingTheme {
@@ -290,94 +267,9 @@ fun CountAnythingApp() {
         LocalDate.now().minusDays(1) -> "Cigarettes Smoked Yesterday"
         else -> "Smoked on ${displayedDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))}"
     }
-    // State for the dropdown menu
-    var showMenu by remember { mutableStateOf(false) }
 
     MaterialTheme {
-
         Scaffold(
-            topBar = {
-                // --- CHANGE HERE: Use CenterAlignedTopAppBar ---
-                CenterAlignedTopAppBar(
-                    title = {
-                        // --- Let's also use the dynamic title you already created ---
-                        Text(text = "My Counters")
-                    },
-                    // --- AND HERE: Use the corresponding colors function ---
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-
-                    // --- ADD THE ACTIONS PARAMETER HERE ---
-                    actions = {
-                        // This is the container for the icon and menu
-                        Box {
-                            // The "three dots" icon button
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "More options"
-                                )
-                            }
-                            // The dropdown menu itself
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
-                            ) {
-                                // Add menu items here
-                                DropdownMenuItem(
-                                    text = { Text("Settings") },
-                                    onClick = {
-                                        // TODO: Handle Settings click
-                                        showMenu = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Settings,
-                                            contentDescription = "Settings"
-                                        )
-                                    }
-                                    )
-                                DropdownMenuItem(
-                                    text = { Text("About") },
-                                    onClick = {
-                                        // TODO: Handle About click
-                                        showMenu = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Info,
-                                            contentDescription = "About"
-                                        )
-                                    }
-
-                                )
-                            }
-                        }
-                    }
-                )
-            },
-            // --- STEP 1: ADD THE FLOATING ACTION BUTTON CODE HERE ---
-            floatingActionButton = {
-                if (currentScreen == Screen.Counter) {
-                FloatingActionButton(
-                    onClick = { /* TODO: Handle Add New Counter click */ },
-                    // This color makes it stand out
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add new counter"
-                    )
-                    }
-                }
-            },
-            // --- STEP 2: TELL THE BUTTON WHERE TO GO ---
-            floatingActionButtonPosition = FabPosition.Center,
-
             bottomBar = {
                 BottomNavigationBar(currentScreen = currentScreen, onScreenSelected = { currentScreen = it })
             }
@@ -773,7 +665,6 @@ fun HistoryScreen(
             selectedDate = selectedDate,
             onDateSelected = onDateSelected
         )
-        WeeklyBarChart(history = history)
     }
 }
 
@@ -1070,55 +961,6 @@ class SquircleShape(private val cornerRadius: Float) : Shape {
         )
     }
 }
-
-
-@Composable
-fun WeeklyBarChart(history: Map<String, Int>) {
-    // 1. Prepare data for the chart
-    val today = LocalDate.now()
-    val chartData = (0..6).map { i ->
-        val date = today.minusDays(i.toLong())
-        val dateString = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        // Use history data, default to 0 if no entry for that day
-        entryOf(6 - i, history[dateString] ?: 0) // x is day index (0=6 days ago, 6=today), y is count
-    }.reversed()
-
-    val chartModelProducer = ChartEntryModelProducer(chartData)
-
-    // 2. Create formatters for the axes
-    val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-        // Show the first letter of the day of the week (e.g., "M" for Monday)
-        val day = today.minusDays((6 - value).toLong())
-        day.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault())
-    }
-
-    // 3. Render the chart
-    if (chartData.any { it.y > 0 }) { // Only show the chart if there's data
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Last 7 Days",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Chart(
-                    chart = columnChart(),
-                    chartModelProducer = chartModelProducer,
-                    startAxis = rememberStartAxis(),
-                    bottomAxis = rememberBottomAxis(
-                        valueFormatter = bottomAxisValueFormatter
-                    ),
-                )
-            }
-        }
-    }
-}
-
 
 @Preview(showBackground = true)
 @Composable

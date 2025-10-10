@@ -12,6 +12,7 @@ materialIcons = "1.6.8"
 animation = "1.9.3"
 composeMaterial3 = "1.5.3"
 composeTesting = "1.0.0-alpha07"
+uiGeometry = "1.9.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,6 +33,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
 compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
 androidx-compose-testing = { group = "androidx.xr.compose", name = "compose-testing", version.ref = "composeTesting" }
+androidx-compose-ui-geometry = { group = "androidx.compose.ui", name = "ui-geometry", version.ref = "uiGeometry" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
