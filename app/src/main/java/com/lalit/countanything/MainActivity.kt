@@ -7,8 +7,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -18,14 +24,16 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +42,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -45,9 +54,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -58,12 +74,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,16 +92,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.fontscaling.MathUtils.lerp
 import androidx.compose.ui.unit.sp
 import com.lalit.countanything.ui.theme.CountAnyThingTheme
 import kotlinx.coroutines.launch
@@ -94,49 +130,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.EditCalendar
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.MultiChoiceSegmentedButtonRow
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.outlined.Analytics
-import androidx.compose.material.icons.outlined.CalendarToday
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.center
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.lerp
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.fontscaling.MathUtils.lerp
-import androidx.compose.ui.unit.height
-import androidx.compose.ui.unit.width
-import kotlin.io.path.moveTo
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -149,9 +142,16 @@ class MonthDay(day: Int) : CalendarDay(day)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val settingsManager = SettingsManager(this)
         setContent {
-            CountAnyThingTheme {
-                CountAnythingApp()
+            val theme by settingsManager.theme.collectAsState(initial = Theme.SYSTEM)
+            val useDarkTheme = when (theme) {
+                Theme.LIGHT -> false
+                Theme.DARK -> true
+                Theme.SYSTEM -> isSystemInDarkTheme()
+            }
+            CountAnyThingTheme(darkTheme = useDarkTheme) {
+                CountAnythingApp(settingsManager)
             }
         }
     }
@@ -161,7 +161,8 @@ class MainActivity : ComponentActivity() {
 fun BouncyButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    shape: Shape = ButtonDefaults.shape,
+    shape: Shape = CircleShape,
+    contentPadding: PaddingValues = PaddingValues(16.dp),
     content: @Composable RowScope.() -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -192,7 +193,7 @@ fun BouncyButton(
                     }
                 }
             },
-        contentPadding = PaddingValues(0.dp),
+        contentPadding = contentPadding,
         content = content
     )
 }
@@ -205,7 +206,7 @@ enum class Screen {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class) // Add ExperimentalAnimationApi
 @Composable
-fun CountAnythingApp() {
+fun CountAnythingApp(settingsManager: SettingsManager) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -330,7 +331,8 @@ fun CountAnythingApp() {
                                 }
                             },
                             daysUntilSalary = daysUntilSalary,
-                            onSetSalaryDate = { showDatePicker = true }
+                            onSetSalaryDate = { showDatePicker = true },
+                            settingsManager = settingsManager
                         )
                         Screen.History -> HistoryScreen(
                             history = history,
@@ -382,7 +384,7 @@ fun CountAnythingApp() {
 }
 
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CounterScreen(
     counterTitle: String,
@@ -394,9 +396,14 @@ fun CounterScreen(
     onReset: () -> Unit,
     onSetSalaryDate: () -> Unit,
     onSetSalaryDay: (LocalDate) -> Unit, // Add this parameter
+    settingsManager: SettingsManager
 ) {
     // 1. Get the haptic feedback instance
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val theme by settingsManager.theme.collectAsState(initial = Theme.SYSTEM)
+    val themes = Theme.values()
+
 
     Column(
         modifier = Modifier
@@ -462,10 +469,7 @@ fun CounterScreen(
                         onSubtractOne()
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     },
-                        // Add shape and size modifiers here
-                        shape = CircleShape,
                         modifier = Modifier.size(64.dp)
-
                     ) {
                         Icon(
                             imageVector = Icons.Default.Remove,
@@ -480,9 +484,7 @@ fun CounterScreen(
                         onAddOne()
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     },
-                        // Add shape and size modifiers here
-                        shape = CircleShape,
-                        modifier = Modifier.size(80.dp) // Make the add button larger as the primary action
+                        modifier = Modifier.size(80.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -555,11 +557,45 @@ fun CounterScreen(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                BouncyButton(onClick = onSetSalaryDate) {
+                BouncyButton(
+                    onClick = onSetSalaryDate,
+                    shape = RoundedCornerShape(28.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.EditCalendar,
                         contentDescription = "Set Salary Date"
                     )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Theme",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                SingleChoiceSegmentedButtonRow {
+                    themes.forEachIndexed { index, item ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = themes.size),
+                            onClick = {
+                                scope.launch { settingsManager.setTheme(item) }
+                            },
+                            selected = theme == item
+                        ) {
+                            Text(item.name.lowercase().replaceFirstChar { it.uppercase() })
+                        }
+                    }
                 }
             }
         }
@@ -583,7 +619,7 @@ fun WavyProgressBar(
     // This state will be used to animate the wave's phase, making it move
     val wavePhase by rememberInfiniteTransition(label = "WavePhase").animateFloat(
         initialValue = 0f,
-        targetValue = 2 * PI.toFloat(),
+        targetValue = (2 * PI).toFloat(),
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 2000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -966,8 +1002,6 @@ class SquircleShape(private val cornerRadius: Float) : Shape {
 @Composable
 fun CountAnythingPreview() {
     CountAnyThingTheme {
-        CountAnythingApp()
+        //CountAnythingApp()
     }
 }
-
-

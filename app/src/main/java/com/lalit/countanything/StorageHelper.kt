@@ -1,25 +1,19 @@
 package com.lalit.countanything
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import com.lalit.countanything.StorageHelper.dateFormatter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONObject
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
-
 object StorageHelper {
 
-    private val DAILY_COUNTS = stringPreferencesKey("daily_cigarette_counts")
-    private val SALARY_DAY = intPreferencesKey("salary_day")
+    val DAILY_COUNTS = stringPreferencesKey("daily_cigarette_counts")
+    val SALARY_DAY = intPreferencesKey("salary_day")
     // Formatter to ensure keys in JSON are consistent
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 

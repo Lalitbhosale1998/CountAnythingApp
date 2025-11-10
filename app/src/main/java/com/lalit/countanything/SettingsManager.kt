@@ -1,11 +1,8 @@
-// In a new file: SettingsManager.ktpackage com.lalit.countanything
+package com.lalit.countanything
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -14,15 +11,12 @@ enum class Theme {
     LIGHT, DARK, SYSTEM
 }
 
-// Create a DataStore instance
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
-
 class SettingsManager(context: Context) {
 
     private val appContext = context.applicationContext
 
     companion object {
-        private val THEME_KEY = stringPreferencesKey("theme_preference")
+        val THEME_KEY = stringPreferencesKey("theme_preference")
     }
 
     // Flow to observe theme changes
