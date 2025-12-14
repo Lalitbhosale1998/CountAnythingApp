@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">マイログ</string>
+    <!-- Settings Screen -->
+    <string name="Theme">テーマ</string>
+    <string name="Language">言語</string>
 </resources>
