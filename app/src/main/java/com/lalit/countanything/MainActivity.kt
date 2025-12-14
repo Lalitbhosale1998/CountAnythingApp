@@ -1,5 +1,12 @@
 package com.lalit.countanything
 
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -568,6 +575,25 @@ fun CounterScreen(
                 }
             }
         }
+//        Spacer(modifier = Modifier.height(24.dp))
+//        Card(
+//            modifier = Modifier.fillMaxWidth(),
+//            shape = RoundedCornerShape(28.dp)
+//        )
+//        {
+//            Column(
+//                modifier = Modifier
+//                    .padding(16.dp)
+//                    .fillMaxWidth(),
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                Text(
+//                    text = "salary",
+//                    style = MaterialTheme.typography.headlineSmall
+//                )
+//            }
+//        }
+
         Spacer(modifier = Modifier.height(24.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -683,12 +709,54 @@ fun WavyProgressBar(
 
 
 
+
+// ... other imports
+
+// Add these imports to the top of MainActivity.kt
+
+// ... keep all other existing composables ...
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class) // Added Animation API
 @Composable
 fun HistoryScreen(
     history: Map<String, Int>,
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // --- MODIFICATION: State to hold the currently displayed month for finances ---
+    var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
+
+    // --- STATE FOR FINANCIAL DATA ---
+    var monthlySalaries by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
+    var monthlySavings by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
+
+    // State for the input fields, now tied to the displayedMonth
+    var salaryInput by remember { mutableStateOf("") }
+    var savingsInput by remember { mutableStateOf("") }
+
+    // --- DATA LOADING ---
+    // This LaunchedEffect now runs only once to load ALL data initially.
+    LaunchedEffect(Unit) {
+        monthlySalaries = StorageHelper.loadAllSalaries(context)
+        monthlySavings = StorageHelper.loadAllSavings(context)
+    }
+
+    // --- MODIFICATION: Effect to update inputs when displayedMonth changes ---
+    // This will react whenever the user navigates to a different month.
+    LaunchedEffect(displayedMonth, monthlySalaries, monthlySavings) {
+        val monthKey = displayedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+        salaryInput = monthlySalaries[monthKey]?.toString() ?: ""
+        savingsInput = monthlySavings[monthKey]?.toString() ?: ""
+    }
+
+    // --- CALCULATIONS ---
+    val totalSalary = monthlySalaries.values.sum()
+    val totalSavings = monthlySavings.values.sum()
+    val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy")
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -696,6 +764,128 @@ fun HistoryScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // --- FINANCIAL INSIGHTS CARD ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // --- MODIFICATION: Add the Month Selector Header ---
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    IconButton(onClick = { displayedMonth = displayedMonth.minusMonths(1) }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month")
+                    }
+                    // Animated text for the month title
+                    AnimatedContent(targetState = displayedMonth, label = "MonthTitleAnimation") { month ->
+                        Text(
+                            text = month.format(monthFormatter),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    IconButton(onClick = { displayedMonth = displayedMonth.plusMonths(1) }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Month")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Salary Input
+                OutlinedTextField(
+                    value = salaryInput,
+                    onValueChange = { newValue ->
+                        if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                            salaryInput = newValue
+                        }
+                    },
+                    label = { Text("Salary for this Month") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Savings Input
+                OutlinedTextField(
+                    value = savingsInput,
+                    onValueChange = { newValue ->
+                        if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                            savingsInput = newValue
+                        }
+                    },
+                    label = { Text("Amount Saved this Month") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Save Button
+                BouncyButton(
+                    onClick = {
+                        scope.launch {
+                            // --- MODIFICATION: Use displayedMonth for saving ---
+                            val monthKey = displayedMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+                            val salary = salaryInput.toFloatOrNull() ?: 0f
+                            val savings = savingsInput.toFloatOrNull() ?: 0f
+
+                            // Save the data for the currently displayed month
+                            StorageHelper.saveSalaryForMonth(context, displayedMonth, salary)
+                            StorageHelper.saveSavingsForMonth(context, displayedMonth, savings)
+
+                            // Update the local state to reflect the change immediately
+                            monthlySalaries = monthlySalaries + (monthKey to salary)
+                            monthlySavings = monthlySavings + (monthKey to savings)
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(vertical = 12.dp, horizontal = 24.dp)
+                ) {
+                    Text("Save Data")
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // --- TOTALS DISPLAY (remains the same) ---
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Total Salary", style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            text = "¥${"%.2f".format(totalSalary)}", // Changed to Rupee symbol
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Total Savings", style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            text = "¥${"%.2f".format(totalSavings)}", // Changed to Rupee symbol
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // --- EXISTING CALENDAR ---
         CigaretteHistoryCalendar(
             history = history,
             selectedDate = selectedDate,
@@ -703,6 +893,8 @@ fun HistoryScreen(
         )
     }
 }
+
+
 
 // In MainActivity.kt
 
