@@ -151,8 +151,13 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.sin
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material3.CardDefaults
 
 
 // Sealed class to represent a cell in our calendar grid
@@ -997,6 +1002,40 @@ fun SettingsScreen(
     val theme by settingsManager.theme.collectAsState(initial = Theme.SYSTEM)
     val themes = Theme.values()
     val supportedLanguages = listOf("en" to "English", "ja" to "日本語")
+    val context = LocalContext.current // Get the context for Toasts
+    // --- INSERT THIS CODE SNIPPET ---
+    // Launcher for EXPORT: Asks the user where to save a new file.
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+        onResult = { uri ->
+            uri?.let {
+                scope.launch {
+                    // This is a placeholder for your actual export logic.
+                    Toast.makeText(context, "Exporting data...", Toast.LENGTH_SHORT).show()
+                    // val dataToExport = StorageHelper.exportAllData(context)
+                    // context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                    //     outputStream.write(dataToExport.toByteArray())
+                    // }
+                }
+            }
+        }
+    )
+
+    // Launcher for IMPORT: Asks the user to pick an existing file.
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            uri?.let {
+                scope.launch {
+                    // This is a placeholder for your actual import logic.
+                    Toast.makeText(context, "Importing data...", Toast.LENGTH_SHORT).show()
+                    // val jsonString = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { it.readText() }
+                    // jsonString?.let { StorageHelper.importAllData(context, it) }
+                }
+            }
+        }
+    )
+    // --- END OF SNIPPET ---
 
     Column(
         modifier = Modifier
@@ -1074,6 +1113,94 @@ fun SettingsScreen(
                 }
             }
         }
+        // --- NEW: STYLED DATA MANAGEMENT SECTION ---
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+            // --- Define the colors from your design ---
+            val peachColor = Color(0xFFFDE4D6) // A light peachy color for the card backgrounds
+            val brownColor = Color(0xFF6F4E37) // A coffee-brown color for text and icons
+
+            // Pill-shaped title
+            Card(
+                shape = CircleShape,
+//                colors = CardDefaults.cardColors(
+//                    containerColor = peachColor, // Use the peach color
+//                    contentColor = brownColor    // Use the brown color for the text inside
+//                )
+            ) {
+                Text(
+                    text = "Data Management",
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold // Make the title bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Two cards for Export and Import
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // A common set of colors for both cards
+                val cardColors = CardDefaults.cardColors(
+                    containerColor = peachColor,
+                    contentColor = brownColor
+                )
+
+                // EXPORT CARD
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { exportLauncher.launch("MyLog_Backup.json") },
+                    shape = RoundedCornerShape(24.dp),
+
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth() // Ensure column takes full width of the card
+                            .padding(vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FileUpload,
+                            contentDescription = "Export Data",
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Export Data", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                // IMPORT CARD
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { importLauncher.launch("application/json") },
+                    shape = RoundedCornerShape(24.dp),
+
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth() // Ensure column takes full width of the card
+                            .padding(vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = "Import Data",
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Import Data", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+
         // You can add more cards here for future settings like "Data Management", etc.
     }
 }
