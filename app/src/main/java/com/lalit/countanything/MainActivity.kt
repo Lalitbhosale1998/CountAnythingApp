@@ -1,6 +1,11 @@
 package com.lalit.countanything
 
 import android.R.attr.maxLines
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
@@ -75,6 +80,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
+import java.util.UUID
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.Button
@@ -155,9 +161,15 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.Savings // Or any other suitable icon
+import androidx.compose.material.icons.filled.TrackChanges // Or any other suitable icon
+import androidx.compose.material3.TopAppBar
 
 
 // Sealed class to represent a cell in our calendar grid
@@ -227,7 +239,34 @@ fun BouncyButton(
 // Enum to represent the different screens
 enum class Screen {
     Counter,
-    History,    Settings
+    History,
+    Goals,
+    Settings
+}
+// Sealed class to represent different types of goals
+sealed class Goal(
+    val id: String = UUID.randomUUID().toString(),
+    val title: String
+) {
+    // Goal Type 1: Keep daily count below a certain number
+    class DailyCountGoal(
+        title: String,
+        val target: Int
+    ) : Goal(title = title)
+
+    // Goal Type 2: Reach a specific total count by a deadline
+    class TotalCountGoal(
+        title: String,
+        val target: Int,
+        val deadline: LocalDate
+    ) : Goal(title = title)
+
+    // Goal Type 3: Save a certain amount of money in a given month
+    class SavingsGoal(
+        title: String,
+        val target: Float,
+        val month: YearMonth
+    ) : Goal(title = title)
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class) // Add ExperimentalAnimationApi
@@ -248,7 +287,14 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
     // --- NEW: Add state for financial data here at the top level ---
     var monthlySalaries by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
     var monthlySavings by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
-
+    var goals by remember { mutableStateOf<List<Goal>>(emptyList()) }
+    var showAddGoalDialog by remember { mutableStateOf(false) }
+    var goalToEdit by remember { mutableStateOf<Goal?>(null) }
+    var goalTypeToCreate by remember { mutableStateOf<String?>(null) }
+    val currentUi = when {
+        goalToEdit != null || goalTypeToCreate != null -> "AddEditGoal"
+        else -> currentScreen.name
+    }
 
     // --- DATA LOADING ---
     LaunchedEffect(Unit) {
@@ -309,11 +355,10 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
         ) { innerPadding ->
             // --- MODIFICATION: Use AnimatedContent for smooth screen transitions ---
             AnimatedContent(
-                targetState = currentScreen,
-                label = "ScreenTransition",
+                targetState = currentUi, // Use the new 'currentUi' state variable
+                label = "MainNavigation",
                 modifier = Modifier.padding(innerPadding),
                 transitionSpec = {
-                    // --- NEW ANIMATION: Scale and Fade (Shared Axis) ---
                     fadeIn(animationSpec = tween(220, delayMillis = 90)) +
                             scaleIn(
                                 initialScale = 0.92f,
@@ -322,14 +367,35 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
                             fadeOut(animationSpec = tween(90)) +
                             scaleOut(targetScale = 1.1f, animationSpec = tween(90))
                 }
-            ) { screen ->
+            ) { uiState ->
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    when (screen) {
-                        Screen.Counter -> CounterScreen(
+                    when (uiState) {
+                        "AddEditGoal" -> AddEditGoalScreen(
+                            goalToEdit = goalToEdit,
+                            goalTypeToCreate = goalTypeToCreate,
+                            onSaveGoal = { newGoal ->
+                                // This logic replaces the old goal or adds a new one
+                                val existingGoals = goals.filterNot { it.id == newGoal.id }
+                                goals = existingGoals + newGoal
+                                // TODO: Persist changes to StorageHelper (scope.launch { ... })
+
+                                // Navigate back by resetting the state
+                                goalToEdit = null
+                                goalTypeToCreate = null
+                            },
+                            onNavigateBack = {
+                                // Navigate back by resetting the state
+                                goalToEdit = null
+                                goalTypeToCreate = null
+                            }
+                        )
+
+                        // --- The rest of the cases now use string names ---
+                        "Counter" -> CounterScreen(
                             counterTitle = counterTitle,
                             cigaretteCount = cigaretteCount,
                             salaryDay = salaryDay,
-                            onSetSalaryDay = { newSalaryDate -> // <-- FIX: Add this parameter
+                            onSetSalaryDay = { newSalaryDate ->
                                 salaryDay = newSalaryDate
                                 scope.launch {
                                     StorageHelper.saveSalaryDay(context, newSalaryDate.dayOfMonth)
@@ -337,8 +403,6 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
                             },
                             onAddOne = {
                                 val newCount = cigaretteCount + 1
-                                // ... (rest of your code is correct)
-
                                 cigaretteCount = newCount
                                 scope.launch {
                                     StorageHelper.saveCountForDate(context, displayedDate, newCount)
@@ -364,7 +428,6 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
                             },
                             settingsManager = settingsManager,
                             daysUntilSalary = daysUntilSalary,
-//                            salaryDay = salaryDay,
                             onSetSalaryDate = { showDatePicker = true },
                             monthlySalaries = monthlySalaries,
                             monthlySavings = monthlySavings,
@@ -373,30 +436,44 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
                                     val key = month.format(DateTimeFormatter.ofPattern("yyyy-MM"))
                                     StorageHelper.saveSalaryForMonth(context, month, salary)
                                     StorageHelper.saveSavingsForMonth(context, month, savings)
-                                    // Update local state to instantly reflect changes
                                     monthlySalaries = monthlySalaries + (key to salary)
                                     monthlySavings = monthlySavings + (key to savings)
                                 }
                             }
                         )
-                        Screen.History -> HistoryScreen(
+                        "History" -> HistoryScreen(
                             history = history,
                             selectedDate = displayedDate,
                             onDateSelected = { newDate ->
                                 displayedDate = newDate
                                 currentScreen = Screen.Counter
-
                             }
                         )
-
-                        Screen.Settings -> SettingsScreen(
+                        "Settings" -> SettingsScreen(
                             settingsManager = settingsManager
+                        )
+                        "Goals" -> GoalsScreen(
+                            goals = goals,
+                            onAddGoalClicked = {
+                                showAddGoalDialog = true
+                            },
+                            onEditGoal = { goal ->
+                                // This triggers navigation to the edit screen
+                                goalToEdit = goal
+                            },
+                            onDeleteGoal = { goal ->
+                                goals = goals - goal
+                                // TODO: Persist this change using StorageHelper
+                                Toast.makeText(context, "${goal.title} deleted", Toast.LENGTH_SHORT).show()
+                            },
+                            history = history,
+                            monthlySavings = monthlySavings
                         )
                     }
                 }
             }
-        }
 
+        }
         // --- NEW: Material 3 Date Picker Dialog ---
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState()
@@ -430,6 +507,190 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
             ) {
                 DatePicker(state = datePickerState)
             }
+        }
+        // --- Show the new Goal Type Dialog ---
+        if (showAddGoalDialog) {
+            ChooseGoalTypeDialog(
+                onDismissRequest = { showAddGoalDialog = false },
+                onGoalTypeSelected = { goalType ->
+                    showAddGoalDialog = false
+                    goalTypeToCreate = goalType // This will trigger navigation
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddEditGoalScreen(
+    goalToEdit: Goal?, // If not null, we are in "edit" mode
+    goalTypeToCreate: String?, // If not null, we are in "create" mode
+    onSaveGoal: (Goal) -> Unit,
+    onNavigateBack: () -> Unit
+) {
+    val goalType = goalToEdit?.let {
+        when (it) {
+            is Goal.DailyCountGoal -> "daily_count"
+            is Goal.SavingsGoal -> "savings"
+            is Goal.TotalCountGoal -> "total_count"
+        }
+    } ?: goalTypeToCreate
+
+    var title by remember { mutableStateOf(goalToEdit?.title ?: "") }
+    var target by remember { mutableStateOf(
+        when (val goal = goalToEdit) {
+            is Goal.DailyCountGoal -> goal.target.toString()
+            is Goal.SavingsGoal -> goal.target.toString()
+            is Goal.TotalCountGoal -> goal.target.toString()
+            else -> ""
+        }
+    ) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(if (goalToEdit == null) "Add Goal" else "Edit Goal") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            when (goalType) {
+                                "daily_count" -> {
+                                    val newGoal = Goal.DailyCountGoal(
+                                        title = title,
+                                        target = target.toIntOrNull() ?: 0
+                                    )
+                                    onSaveGoal(newGoal)
+                                }
+                                "savings" -> {
+                                    val newGoal = Goal.SavingsGoal(
+                                        title = title,
+                                        target = target.toFloatOrNull() ?: 0f,
+                                        month = YearMonth.now() // Placeholder
+                                    )
+                                    onSaveGoal(newGoal)
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Save")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Goal Title") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            when (goalType) {
+                "daily_count" -> {
+                    OutlinedTextField(
+                        value = target,
+                        onValueChange = { target = it },
+                        label = { Text("Daily Count Limit") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                "savings" -> {
+                    OutlinedTextField(
+                        value = target,
+                        onValueChange = { target = it },
+                        label = { Text("Savings Target (e.g., 20000)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    // TODO: Add a month picker for the savings goal
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun ChooseGoalTypeDialog(
+    onDismissRequest: () -> Unit,
+    onGoalTypeSelected: (String) -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Card(            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Add a New Goal", style = MaterialTheme.typography.headlineSmall)
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Use a Row for side-by-side selection
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Option 1: Daily Count Goal
+                    GoalTypeOption(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.TrackChanges,
+                        text = "Daily Limit",
+                        onClick = { onGoalTypeSelected("daily_count") }
+                    )
+                    // Option 2: Savings Goal
+                    GoalTypeOption(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Savings,
+                        text = "Savings",
+                        onClick = { onGoalTypeSelected("savings") }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GoalTypeOption(
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .fillMaxSize()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(imageVector = icon, contentDescription = text, modifier = Modifier.size(40.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
         }
     }
 }
@@ -764,6 +1025,95 @@ fun CounterScreen(
         )
     }
 }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoalsScreen(
+    goals: List<Goal>,
+    onAddGoalClicked: () -> Unit,
+    onEditGoal: (Goal) -> Unit,
+    onDeleteGoal: (Goal) -> Unit,
+    // We pass this data down to calculate progress later
+    history: Map<String, Int>,
+    monthlySavings: Map<String, Float>
+) {
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddGoalClicked) {
+                Icon(Icons.Default.Add, contentDescription = "Add Goal")
+            }
+        }
+    ) { padding ->
+        if (goals.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "No goals yet. Tap '+' to add one!",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(goals, key = { it.id }) { goal ->
+                    GoalCard(
+                        goal = goal,
+                        history = history,
+                        monthlySavings = monthlySavings,
+                        onEdit = { onEditGoal(goal) },
+                        onDelete = { onDeleteGoal(goal) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GoalCard(
+    goal: Goal,
+    history: Map<String, Int>,
+    monthlySavings: Map<String, Float>,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    // This is a placeholder UI for a single goal card.
+    // We'll add real progress bars and logic in a later step.
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(goal.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Display placeholder info based on goal type
+                when (goal) {
+                    is Goal.DailyCountGoal -> Text("Target: < ${goal.target} per day", style = MaterialTheme.typography.bodyMedium)
+                    is Goal.TotalCountGoal -> Text("Target: ${goal.target} by ${goal.deadline.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))}", style = MaterialTheme.typography.bodyMedium)
+                    is Goal.SavingsGoal -> Text("Target: ¥${"%,.0f".format(goal.target)} for ${goal.month.format(DateTimeFormatter.ofPattern("MMMM"))}", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            // Action buttons for the goal
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit Goal")
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Close, contentDescription = "Delete Goal")
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -991,6 +1341,14 @@ fun BottomNavigationBar(currentScreen: Screen, onScreenSelected: (Screen) -> Uni
             unselectedIcon = Icons.Outlined.Settings,
             onClick = { onScreenSelected(Screen.Settings) }
         )
+        CustomNavigationBarItem(
+            label = "Goals",
+            isSelected = currentScreen == Screen.Goals,
+            selectedIcon = Icons.Filled.Flag,
+            unselectedIcon = Icons.Outlined.Flag,
+            onClick = { onScreenSelected(Screen.Goals) }
+        )
+
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
