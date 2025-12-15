@@ -1,6 +1,9 @@
 package com.lalit.countanything
 
 import android.R.attr.maxLines
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
@@ -227,7 +230,9 @@ fun BouncyButton(
 // Enum to represent the different screens
 enum class Screen {
     Counter,
-    History,    Settings
+    History,
+    Goal,
+    Settings
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class) // Add ExperimentalAnimationApi
@@ -248,7 +253,11 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
     // --- NEW: Add state for financial data here at the top level ---
     var monthlySalaries by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
     var monthlySavings by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
-
+    // --- Goal State ---
+    var goalTitle by remember { mutableStateOf("Buy Toyota GR86 SZ Manual") }
+    var goalPrice by remember { mutableStateOf(3195000f) }
+    var goalAmountNeeded by remember { mutableStateOf(1800000f) }
+    var totalSentToIndia by remember { mutableStateOf(0f) }
 
     // --- DATA LOADING ---
     LaunchedEffect(Unit) {
@@ -257,7 +266,13 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
         // Load financial data
         monthlySalaries = StorageHelper.loadAllSalaries(context)
         monthlySavings = StorageHelper.loadAllSavings(context)
-
+// --- ADD THIS BLOCK TO LOAD GOAL DATA ---
+        val loadedGoal = StorageHelper.loadGoal(context)
+        goalTitle = loadedGoal.title
+        goalPrice = loadedGoal.price
+        goalAmountNeeded = loadedGoal.amountNeeded
+        totalSentToIndia = StorageHelper.loadTotalSent(context) // <-- ADD THIS
+        // --- END OF NEW BLOCK ---
         StorageHelper.loadSalaryDay(context)?.let { day ->
             val today = LocalDate.now()
             var nextDate = today.withDayOfMonth(day)
@@ -287,7 +302,7 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
             nextSalaryDate = nextSalaryDate.plusMonths(1)
         }
         nextSalaryDate = when (nextSalaryDate.dayOfWeek) {
-            DayOfWeek.SATURDAY -> nextSalaryDate.minusDays(1)
+            DayOfWeek.SATURDAY -> nextSalaryDate.minusDays(2)
             DayOfWeek.SUNDAY -> nextSalaryDate.plusDays(1)
             else -> nextSalaryDate
         }
@@ -388,6 +403,32 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
 
                             }
                         )
+                        //...
+                        Screen.Goal -> GoalScreen(
+                            monthlySavings = monthlySavings,
+                            goalTitle = goalTitle,
+                            goalPrice = goalPrice,
+                            goalAmountNeeded = goalAmountNeeded,
+                            onSaveGoal = { title, price, amountNeeded ->
+                                // Update local state immediately
+                                goalTitle = title
+                                goalPrice = price
+                                goalAmountNeeded = amountNeeded
+                                // Launch a coroutine to save to storage
+                                scope.launch {
+                                    StorageHelper.saveGoal(context, title, price, amountNeeded)
+                                }
+                            },
+                            totalSentToIndia = totalSentToIndia, // <-- PASS THE STATE
+                            onAddToTotalSent = { amount -> // <-- HANDLE THE UPDATE
+                                val newTotal = totalSentToIndia + amount
+                                totalSentToIndia = newTotal
+                                scope.launch {
+                                    StorageHelper.saveTotalSent(context, newTotal)
+                                }
+                            }
+                        )
+//...
 
                         Screen.Settings -> SettingsScreen(
                             settingsManager = settingsManager
@@ -983,6 +1024,13 @@ fun BottomNavigationBar(currentScreen: Screen, onScreenSelected: (Screen) -> Uni
             unselectedIcon = Icons.Outlined.Analytics,
             onClick = { onScreenSelected(Screen.History) }
         )
+        CustomNavigationBarItem(
+            label = "Goal",
+            isSelected = currentScreen == Screen.Goal,
+            selectedIcon = Icons.Filled.Flag,
+            unselectedIcon = Icons.Outlined.Flag,
+            onClick = { onScreenSelected(Screen.Goal) }
+        )
         // --- NEW: SETTINGS ITEM ---
         CustomNavigationBarItem(
             label = "Settings",
@@ -993,6 +1041,311 @@ fun BottomNavigationBar(currentScreen: Screen, onScreenSelected: (Screen) -> Uni
         )
     }
 }
+// In MainActivity.kt
+
+// Replace the existing GoalScreen with this one
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoalScreen(
+    monthlySavings: Map<String, Float>,
+    goalTitle: String,
+    goalPrice: Float,    goalAmountNeeded: Float,
+    onSaveGoal: (title: String, price: Float, amountNeeded: Float) -> Unit,
+    totalSentToIndia: Float, // <-- ADD THIS
+    onAddToTotalSent: (Float) -> Unit // <-- AND ADD THIS
+) {
+    // --- State for the Edit Dialogs ---
+    var showGoalEditDialog by remember { mutableStateOf(false) }
+    var showSentAmountDialog by remember { mutableStateOf(false) } // <-- Add this state
+
+    // --- Calculations ---
+    val totalSaved = monthlySavings.values.sum()
+    val amountStillNeeded = (goalAmountNeeded - totalSaved).coerceAtLeast(0f)
+    val goalProgress = if (goalAmountNeeded > 0) (totalSaved / goalAmountNeeded).coerceIn(0f, 1f) else 0f
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp) // Use spacedBy for consistent spacing
+    ) {
+        // --- GOAL CARD ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // ... (The entire content of your existing goal card)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = goalTitle,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    IconButton(onClick = { showGoalEditDialog = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Goal")
+                    }
+                }
+                // ... rest of the goal card content
+                Text(
+                    text = "Total Price: ¥${"%,.0f".format(goalPrice)}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(32.dp))
+                Box(contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        progress = { goalProgress },
+                        modifier = Modifier.size(200.dp),
+                        strokeWidth = 15.dp,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Text(
+                        text = "${(goalProgress * 100).toInt()}%",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.height(32.dp))
+                Text(
+                    "Amount still to save",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "¥${"%,.0f".format(amountStillNeeded)}",
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Total saved so far: ¥${"%,.0f".format(totalSaved)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // --- NEW CARD: AMOUNT SENT TO INDIA ---
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showSentAmountDialog = true }, // Open dialog on click
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Money Sent to India",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "¥${"%,.0f".format(totalSentToIndia)}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Amount Sent",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+        }
+    }
+
+    // --- DIALOGS ---
+    if (showGoalEditDialog) {
+        GoalEditDialog(
+            initialTitle = goalTitle,
+            initialPrice = goalPrice,
+            initialAmountNeeded = goalAmountNeeded,
+            onDismiss = { showGoalEditDialog = false },
+            onSave = { title, price, amountNeeded ->
+                onSaveGoal(title, price, amountNeeded)
+                showGoalEditDialog = false
+            }
+        )
+    }
+
+    if (showSentAmountDialog) {
+        AddAmountSentDialog(
+            onDismiss = { showSentAmountDialog = false },
+            onAdd = { amount ->
+                onAddToTotalSent(amount)
+                showSentAmountDialog = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddAmountSentDialog(
+    onDismiss: () -> Unit,
+    onAdd: (amount: Float) -> Unit
+) {
+    var amountInput by remember { mutableStateOf("") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = RoundedCornerShape(28.dp)) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Add Amount Sent",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                OutlinedTextField(
+                    value = amountInput,
+                    onValueChange = { newValue ->
+                        if (newValue.matches(Regex("^\\d*\$"))) { // Allow only numbers
+                            amountInput = newValue
+                        }
+                    },
+                    label = { Text("Amount in Yen (¥)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            onAdd(amountInput.toFloatOrNull() ?: 0f)
+                        },
+                        enabled = amountInput.isNotEmpty()
+                    ) {
+                        Text("Add")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoalEditDialog(
+    initialTitle: String,
+    initialPrice: Float,
+    initialAmountNeeded: Float,
+    onDismiss: () -> Unit,
+    onSave: (title: String, price: Float, amountNeeded: Float) -> Unit
+) {
+    var titleInput by remember { mutableStateOf(initialTitle) }
+    var priceInput by remember { mutableStateOf(initialPrice.takeIf { it > 0 }?.toString() ?: "") }
+    var amountNeededInput by remember { mutableStateOf(initialAmountNeeded.takeIf { it > 0 }?.toString() ?: "") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = RoundedCornerShape(28.dp)) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                    Text(
+                        text = "Edit Goal",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = {
+                        onSave(
+                            titleInput,
+                            priceInput.toFloatOrNull() ?: 0f,
+                            amountNeededInput.toFloatOrNull() ?: 0f
+                        )
+                    }) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = "Save",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Goal Title Input
+                OutlinedTextField(
+                    value = titleInput,
+                    onValueChange = { titleInput = it },
+                    label = { Text("Goal Title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Price Input
+                OutlinedTextField(
+                    value = priceInput,
+                    onValueChange = { newValue ->
+                        if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                            priceInput = newValue
+                        }
+                    },
+                    label = { Text("Total Price") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Amount Needed to Save Input
+                OutlinedTextField(
+                    value = amountNeededInput,
+                    onValueChange = { newValue ->
+                        if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                            amountNeededInput = newValue
+                        }
+                    },
+                    label = { Text("Amount You Need to Save") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
