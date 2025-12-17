@@ -2,6 +2,7 @@ package com.lalit.countanything
 
 import android.R.attr.maxLines
 import androidx.datastore.preferences.core.floatPreferencesKey
+
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.foundation.text.KeyboardOptions
@@ -158,9 +159,16 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.SideEffect
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 
 // Sealed class to represent a cell in our calendar grid
@@ -179,12 +187,51 @@ class MainActivity : ComponentActivity() {
                 Theme.DARK -> true
                 Theme.SYSTEM -> isSystemInDarkTheme()
             }
+
+            // --- System UI Controller for Status Bar ---
+            val systemUiController = rememberSystemUiController()
+            SideEffect {
+                systemUiController.setStatusBarColor(
+                    color = Color.Transparent,
+                    darkIcons = !useDarkTheme
+                )
+            }
+
+            // --- Welcome Screen Logic ---
+            val scope = rememberCoroutineScope()
+            // We initialize to 'true' so the main app flashes for a moment while DataStore loads.
+            // A dedicated loading screen would be an alternative.
+            val welcomeShown by settingsManager.welcomeShown.collectAsState(initial = true)
+
+
             CountAnyThingTheme(darkTheme = useDarkTheme) {
-                CountAnythingApp(settingsManager)
+                // We use AnimatedContent to smoothly switch between Welcome and Main app.
+                AnimatedContent(
+                    targetState = welcomeShown,
+                    label = "WelcomeAppTransition",
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
+                    }
+                ) { hasBeenWelcomed ->
+                    if (hasBeenWelcomed) {
+                        // User has seen the welcome screen, show the main app
+                        CountAnythingApp(settingsManager)
+                    } else {
+                        // First time user, show the Welcome Screen
+                        WelcomeScreen(
+                            onContinueClicked = {
+                                scope.launch {
+                                    settingsManager.setWelcomeShown()
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
     }
 }
+
 
 @Composable
 fun BouncyButton(
@@ -423,6 +470,13 @@ fun CountAnythingApp(settingsManager: SettingsManager) {
                             onAddToTotalSent = { amount -> // <-- HANDLE THE UPDATE
                                 val newTotal = totalSentToIndia + amount
                                 totalSentToIndia = newTotal
+                                scope.launch {
+                                    StorageHelper.saveTotalSent(context, newTotal)
+                                }
+                            },
+                            // --- ADD THIS NEW HANDLER ---
+                            onSetTotalSent = { newTotal ->
+                                totalSentToIndia = newTotal // Overwrite the old total
                                 scope.launch {
                                     StorageHelper.saveTotalSent(context, newTotal)
                                 }
@@ -805,6 +859,26 @@ fun CounterScreen(
         )
     }
 }
+@Composable
+fun WelcomeScreen(onContinueClicked: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        BouncyButton(
+            onClick = onContinueClicked,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp), // <-- ADD THIS LINE
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            Text("Get Started", fontSize = 18.sp)
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1041,9 +1115,7 @@ fun BottomNavigationBar(currentScreen: Screen, onScreenSelected: (Screen) -> Uni
         )
     }
 }
-// In MainActivity.kt
 
-// Replace the existing GoalScreen with this one
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalScreen(
@@ -1052,7 +1124,8 @@ fun GoalScreen(
     goalPrice: Float,    goalAmountNeeded: Float,
     onSaveGoal: (title: String, price: Float, amountNeeded: Float) -> Unit,
     totalSentToIndia: Float, // <-- ADD THIS
-    onAddToTotalSent: (Float) -> Unit // <-- AND ADD THIS
+    onAddToTotalSent: (Float) -> Unit, // <-- AND ADD THIS
+    onSetTotalSent: (Float) -> Unit
 ) {
     // --- State for the Edit Dialogs ---
     var showGoalEditDialog by remember { mutableStateOf(false) }
@@ -1062,6 +1135,7 @@ fun GoalScreen(
     val totalSaved = monthlySavings.values.sum()
     val amountStillNeeded = (goalAmountNeeded - totalSaved).coerceAtLeast(0f)
     val goalProgress = if (goalAmountNeeded > 0) (totalSaved / goalAmountNeeded).coerceIn(0f, 1f) else 0f
+    var showEditTotalSentDialog by remember { mutableStateOf(false) } // <-- ADD THIS
 
     Column(
         modifier = Modifier
@@ -1161,11 +1235,24 @@ fun GoalScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Amount Sent",
-                    modifier = Modifier.size(40.dp)
-                )
+                // --- ACTION BUTTONS ---
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // EDIT button to overwrite the total
+                    IconButton(onClick = { showEditTotalSentDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Total Amount Sent"
+                        )
+                    }
+                    // ADD button to add a new amount
+                    IconButton(onClick = { showSentAmountDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Amount Sent",
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -1183,7 +1270,16 @@ fun GoalScreen(
             }
         )
     }
-
+    if (showEditTotalSentDialog) {
+        EditTotalSentDialog(
+            initialAmount = totalSentToIndia,
+            onDismiss = { showEditTotalSentDialog = false },
+            onSave = { newTotal ->
+                onSetTotalSent(newTotal) // Call the overwrite handler
+                showEditTotalSentDialog = false
+            }
+        )
+    }
     if (showSentAmountDialog) {
         AddAmountSentDialog(
             onDismiss = { showSentAmountDialog = false },
@@ -1192,6 +1288,58 @@ fun GoalScreen(
                 showSentAmountDialog = false
             }
         )
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditTotalSentDialog(
+    initialAmount: Float,
+    onDismiss: () -> Unit,
+    onSave: (newTotal: Float) -> Unit
+) {
+    var amountInput by remember { mutableStateOf(initialAmount.takeIf { it > 0 }?.toString() ?: "") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = RoundedCornerShape(28.dp)) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Edit Total Amount Sent",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                OutlinedTextField(
+                    value = amountInput,
+                    onValueChange = { newValue ->
+                        if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                            amountInput = newValue
+                        }
+                    },
+                    label = { Text("New Total Amount in Yen (¥)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    Button(onClick = { onSave(amountInput.toFloatOrNull() ?: 0f) }) {
+                        Text("Save")
+                    }
+                }
+            }
+        }
     }
 }
 

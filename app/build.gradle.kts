@@ -45,6 +45,8 @@ kotlin
 // C:/Users/lalit/Documents/App/app/build.gradle.kts
 
 dependencies {
+    implementation("com.airbnb.android:lottie-compose:6.4.1")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
