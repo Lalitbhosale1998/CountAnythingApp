@@ -1,0 +1,87 @@
+package com.lalit.countanything.ui.components
+
+import android.annotation.SuppressLint
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.fontscaling.MathUtils.lerp
+import kotlin.math.PI
+import kotlin.math.sin
+
+@SuppressLint("RestrictedApi")
+@Composable
+fun WavyProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    waveColor: Color = MaterialTheme.colorScheme.primary,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceVariant
+) {
+    // This state will be used to animate the wave's phase, making it move
+    val wavePhase by rememberInfiniteTransition(label = "WavePhase").animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "WaveAnimation"
+    )
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(24.dp)
+    ) {
+        val strokeWidth = size.height * 0.8f // Make the wave a bit thicker
+        val capRadius = strokeWidth / 2
+        val progressEndPx = lerp(0f, size.width, progress)
+
+        // 1. Draw the wavy filled portion first
+        if (progress > 0f) {
+            val wavePath = Path()
+            val waveAmplitude = strokeWidth * 0.3f // How high the waves are
+            val waveFrequency = 0.05f // How many waves appear
+
+            wavePath.moveTo(0f, center.y)
+            for (x in 0..progressEndPx.toInt()) {
+                val y = center.y + sin(x * waveFrequency + wavePhase) * waveAmplitude
+                wavePath.lineTo(x.toFloat(), y)
+            }
+            drawPath(
+                path = wavePath,
+                color = waveColor,
+                style = Stroke(
+                    width = strokeWidth,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
+        }
+
+        // 2. Draw the remaining track starting AFTER the wavy part ends
+        if (progress < 1f) {
+            // Also draw the small dot at the end of the track
+            drawCircle(
+                color = waveColor,
+                radius = capRadius * 0.3f,
+                center = Offset(x = size.width - capRadius, y = center.y)
+            )
+        }
+    }
+}

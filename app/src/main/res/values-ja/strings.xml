@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">マイログ</string>
+
+    <!-- Navigation -->
+    <string name="nav_counter">カウンター</string>
+    <string name="nav_history">履歴</string>
+    <string name="nav_goal">目標</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- Welcome Screen -->
+    <string name="welcome_get_started">始める</string>
+
+    <!-- Counter Screen -->
+    <string name="counter_cigarettes_today">今日吸ったタバコ</string>
+    <string name="counter_cigarettes_yesterday">昨日吸ったタバコ</string>
+    <string name="counter_cigarettes_on">%1$s に吸ったタバコ</string>
+    <string name="days_until_salary">給料日まであと</string>
+    <string name="not_set">未定</string>
+    <string name="current">現在</string>
+    <string name="amount_saved">貯蓄額</string>
+    <string name="amount_spent">支出額</string>
+
+    <!-- Goal Screen -->
+    <string name="total_price">総額: %1$s</string>
+    <string name="amount_still_to_save">目標まであと</string>
+    <string name="total_saved_so_far">現在の貯蓄: %1$s</string>
+    <string name="money_sent_to_india">インドへの送金</string>
+
+    <!-- Settings Screen -->
+    <string name="theme">テーマ</string>
+    <string name="language">言語</string>
+    <string name="data_management">データ管理</string>
+    <string name="export_data">データ出力</string>
+    <string name="import_data">データ入力</string>
+    <string name="export_success">エクスポートが完了しました！</string>
+    <string name="export_failed">エクスポートに失敗しました: %1$s</string>
+    <string name="import_success">インポートが完了しました！</string>
+    <string name="import_failed">インポートに失敗しました: %1$s</string>
+    <string name="exporting">データをエクスポート中...</string>
+    <string name="importing">データをインポート中...</string>
+
+    <!-- Accessibility -->
+    <string name="prev_month">前の月</string>
+    <string name="next_month">次の月</string>
+    <string name="edit_financial_data">財務データを編集</string>
+    <string name="subtract_one">1つ減らす</string>
+    <string name="add_one">1つ増やす</string>
+    <string name="reset">リセット</string>
+    <string name="set_salary_date">給料日を設定</string>
+</resources>
