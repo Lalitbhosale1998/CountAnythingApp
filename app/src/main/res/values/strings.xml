@@ -1,50 +1,59 @@
 <resources>
-    <string name="app_name">MyLog</string>
-    
+    <string name="app_name" translatable="false">マイログ</string>
+
     <!-- Navigation -->
-    <string name="nav_counter">Counter</string>
-    <string name="nav_history">History</string>
-    <string name="nav_goal">Goal</string>
-    <string name="nav_settings">Settings</string>
+    <string name="nav_counter" translatable="false">Counter</string>
+    <string name="nav_history" translatable="false">History</string>
+    <string name="nav_goal" translatable="false">Goal</string>
+    <string name="nav_settings" translatable="false">Settings</string>
 
     <!-- Welcome Screen -->
-    <string name="welcome_get_started">Get Started</string>
+    <string name="welcome_get_started" translatable="false">Get Started</string>
+    <string name="welcome_subtitle">Track your progress, one step at a time.</string>
 
     <!-- Counter Screen -->
-    <string name="counter_cigarettes_today">Cigarettes Smoked Today</string>
-    <string name="counter_cigarettes_yesterday">Cigarettes Smoked Yesterday</string>
-    <string name="counter_cigarettes_on">Smoked on %1$s</string> <!-- %1$s for date -->
-    <string name="days_until_salary">Days until next salary</string>
-    <string name="not_set">Not Set</string>
-    <string name="current">Current</string>
-    <string name="amount_saved">Amount Saved</string>
-    <string name="amount_spent">Amount Spent</string>
+    <string name="counter_cigarettes_today" translatable="false">Cigarettes Smoked Today</string>
+    <string name="counter_cigarettes_yesterday" translatable="false">Cigarettes Smoked Yesterday</string>
+    <string name="counter_cigarettes_on" translatable="false">Smoked on %1$s</string> <!-- %1$s for date -->
+    <string name="days_until_salary" translatable="false">Days until next salary</string>
+    <string name="not_set" translatable="false">Not Set</string>
+    <string name="current" translatable="false">Current</string>
+    <string name="amount_saved" translatable="false">Amount Saved</string>
+    <string name="amount_spent" translatable="false">Amount Spent</string>
 
     <!-- Goal Screen -->
-    <string name="total_price">Total Price: %1$s</string>
-    <string name="amount_still_to_save">Amount still to save</string>
-    <string name="total_saved_so_far">Total saved so far: %1$s</string>
-    <string name="money_sent_to_india">Money Sent to India</string>
+    <string name="total_price" translatable="false">Total Price: %1$s</string>
+    <string name="amount_still_to_save" translatable="false">Amount still to save</string>
+    <string name="total_saved_so_far" translatable="false">Total saved so far: %1$s</string>
+    <string name="money_sent_to_india" translatable="false">Money Sent to India</string>
 
     <!-- Settings Screen -->
-    <string name="theme">Theme</string>
-    <string name="language">Language</string>
-    <string name="data_management">Data Management</string>
-    <string name="export_data">Export Data</string>
-    <string name="import_data">Import Data</string>
-    <string name="export_success">Exported successfully!</string>
-    <string name="export_failed">Export failed: %1$s</string>
-    <string name="import_success">Imported successfully!</string>
-    <string name="import_failed">Import failed: %1$s</string>
-    <string name="exporting">Exporting data...</string>
-    <string name="importing">Importing data...</string>
+    <string name="theme" translatable="false">Theme</string>
+    <string name="language" translatable="false">Language</string>
+    <string name="data_management" translatable="false">Data Management</string>
+    <string name="export_data" translatable="false">Export Data</string>
+    <string name="import_data" translatable="false">Import Data</string>
+    <string name="export_success" translatable="false">Exported successfully!</string>
+    <string name="export_failed" translatable="false">Export failed: %1$s</string>
+    <string name="import_success" translatable="false">Imported successfully!</string>
+    <string name="import_failed" translatable="false">Import failed: %1$s</string>
+    <string name="exporting" translatable="false">Exporting data...</string>
+    <string name="importing" translatable="false">Importing data...</string>
     
     <!-- Accessibility -->
-    <string name="prev_month">Previous Month</string>
-    <string name="next_month">Next Month</string>
-    <string name="edit_financial_data">Edit Financial Data</string>
-    <string name="subtract_one">Subtract One</string>
-    <string name="add_one">Add One</string>
-    <string name="reset">Reset</string>
-    <string name="set_salary_date">Set Salary Date</string>
+    <string name="prev_month" translatable="false">Previous Month</string>
+    <string name="next_month" translatable="false">Next Month</string>
+    <string name="edit_financial_data" translatable="false">Edit Financial Data</string>
+    <string name="subtract_one" translatable="false">Subtract One</string>
+    <string name="add_one" translatable="false">Add One</string>
+    <string name="reset" translatable="false">Reset</string>
+    <string name="set_salary_date" translatable="false">Set Salary Date</string>
+    <string name="security" translatable="false">Security</string>
+    <string name="app_lock" translatable="false">App Lock (Biometric)</string>
+    <string name="unlock_title" translatable="false">Unlock Count Anything</string>
+    <string name="unlock_subtitle" translatable="false">Authentication required</string>
+    <string name="cancel" translatable="false">Cancel</string>
+    <string name="app_locked" translatable="false">App Locked</string>
+    <string name="auth_required" translatable="false">Authentication required to access your data.</string>
+    <string name="tap_to_unlock" translatable="false">Tap to Unlock</string>
 </resources>

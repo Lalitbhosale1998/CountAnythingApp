@@ -19,10 +19,23 @@ import com.lalit.countanything.ui.CountAnythingApp
 import com.lalit.countanything.ui.screens.WelcomeScreen
 import com.lalit.countanything.ui.theme.CountAnyThingTheme
 import kotlinx.coroutines.launch
+import androidx.activity.viewModels
+import com.lalit.countanything.ui.viewmodels.MainViewModel
 
 import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import java.util.concurrent.Executor
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import com.lalit.countanything.ui.components.LockScreen
+import androidx.compose.runtime.collectAsState
 
 class MainActivity : AppCompatActivity() {
+    private val mainViewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val settingsManager = SettingsManager(this)
@@ -51,26 +64,74 @@ class MainActivity : AppCompatActivity() {
 
 
             CountAnyThingTheme(darkTheme = useDarkTheme) {
-                // We use AnimatedContent to smoothly switch between Welcome and Main app.
-                AnimatedContent(
-                    targetState = welcomeShown,
-                    label = "WelcomeAppTransition",
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
-                    }
-                ) { hasBeenWelcomed ->
-                    if (hasBeenWelcomed) {
-                        // User has seen the welcome screen, show the main app
-                        CountAnythingApp(settingsManager)
-                    } else {
-                        // First time user, show the Welcome Screen
-                        WelcomeScreen(
-                            onContinueClicked = {
-                                scope.launch {
-                                    settingsManager.setWelcomeShown()
-                                }
+                // Collect Settings
+                val isAppLockEnabled by settingsManager.isAppLockEnabled.collectAsState(initial = null)
+                
+                var isLocked by remember { mutableStateOf(true) } // Default to locked
+                
+                // Effect to handle initial lock state based on setting
+                LaunchedEffect(isAppLockEnabled) {
+                    // Only unlock if we are SURE it's disabled.
+                    // If it's null (loading) or true (enabled), we stay locked.
+                    if (isAppLockEnabled == false) {
+                        isLocked = false
+                    } 
+                }
+
+                // Authentication Function
+                fun authenticate() {
+                    val executor = ContextCompat.getMainExecutor(this)
+                    val biometricPrompt = BiometricPrompt(this, executor,
+                        object : BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                super.onAuthenticationSucceeded(result)
+                                isLocked = false
                             }
-                        )
+                            // Handle error/fail? For now, just stay locked.
+                        })
+
+                    val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                        .setTitle(getString(R.string.unlock_title))
+                        .setSubtitle(getString(R.string.unlock_subtitle))
+                        .setNegativeButtonText(getString(R.string.cancel))
+                        .build()
+
+                    biometricPrompt.authenticate(promptInfo)
+                }
+
+                // Trigger auth ONCE when lock is enabled and we are locked
+                LaunchedEffect(isAppLockEnabled, isLocked) {
+                    if (isAppLockEnabled == true && isLocked) {
+                        authenticate()
+                    }
+                }
+
+                // Main Content Switching
+                if (isAppLockEnabled == true && isLocked) {
+                    LockScreen(onUnlockClick = { authenticate() })
+                } else {
+                    // Safe Content
+                    AnimatedContent(
+                        targetState = welcomeShown,
+                        label = "WelcomeAppTransition",
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
+                        }
+                    ) { hasBeenWelcomed ->
+                        if (hasBeenWelcomed) {
+                            CountAnythingApp(
+                                viewModel = mainViewModel,
+                                settingsManager = settingsManager
+                            )
+                        } else {
+                            WelcomeScreen(
+                                onContinueClicked = {
+                                    scope.launch {
+                                        settingsManager.setWelcomeShown()
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

@@ -34,20 +34,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.lalit.countanything.ui.components.AddAmountSentDialog
-import com.lalit.countanything.ui.components.EditTotalSentDialog
 import com.lalit.countanything.ui.components.GoalEditDialog
+import com.lalit.countanything.ui.components.AnimatedColumn
+import com.lalit.countanything.ui.components.springyTouch
 import androidx.compose.ui.res.stringResource
 import com.lalit.countanything.R
+import com.lalit.countanything.ui.components.AddAmountSentDialog
+import com.lalit.countanything.ui.components.AnimatedItem
+import com.lalit.countanything.ui.components.EditTotalSentDialog
+import com.lalit.countanything.ui.components.SensitiveText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalScreen(
     monthlySavings: Map<String, Float>,
     goalTitle: String,
-    goalPrice: Float,    goalAmountNeeded: Float,
-    onSaveGoal: (title: String, price: Float, amountNeeded: Float) -> Unit,
+    goalPrice: Float,
+    goalAmountNeeded: Float,
     totalSentToIndia: Float,
+    currencySymbol: String,
+    isPrivacyModeEnabled: Boolean,
+    onUpdateGoal: (title: String, price: Float, amountNeeded: Float) -> Unit,
     onAddToTotalSent: (Float) -> Unit,
     onSetTotalSent: (Float) -> Unit
 ) {
@@ -61,124 +68,139 @@ fun GoalScreen(
     val goalProgress = if (goalAmountNeeded > 0) (totalSaved / goalAmountNeeded).coerceIn(0f, 1f) else 0f
     var showEditTotalSentDialog by remember { mutableStateOf(false) }
 
-    Column(
+    AnimatedColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp) // Use spacedBy for consistent spacing
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // --- GOAL CARD ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        AnimatedItem(index = 0) {
+            // --- GOAL CARD ---
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .springyTouch(),
+                shape = RoundedCornerShape(28.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = goalTitle,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    IconButton(onClick = { showGoalEditDialog = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Goal")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = goalTitle,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        IconButton(onClick = { showGoalEditDialog = true }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Goal")
+                        }
                     }
+                    Text(
+                        text = stringResource(R.string.total_price, "%,.0f".format(goalPrice)),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(32.dp))
+                    // --- NEW CAR ANIMATION ---
+                    com.lalit.countanything.ui.components.CarProgress(
+                        progress = goalProgress,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        fillColor = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "${(goalProgress * 100).toInt()}%",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        stringResource(R.string.amount_still_to_save),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    SensitiveText(
+                        text = "$currencySymbol${"%,.0f".format(amountStillNeeded)}",
+                        style = MaterialTheme.typography.displayMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        ),
+                        privacyModeEnabled = isPrivacyModeEnabled
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.total_saved_so_far, "%,.0f".format(totalSaved)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Text(
-                    text = stringResource(R.string.total_price, "%,.0f".format(goalPrice)),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(32.dp))
-                // --- NEW CAR ANIMATION ---
-                com.lalit.countanything.ui.components.CarProgress(
-                    progress = goalProgress,
-                    modifier = Modifier.fillMaxWidth().height(150.dp),
-                    fillColor = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-                
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "${(goalProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(24.dp))
-                Text(
-                    stringResource(R.string.amount_still_to_save),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "¥${"%,.0f".format(amountStillNeeded)}",
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    stringResource(R.string.total_saved_so_far, "%,.0f".format(totalSaved)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
 
-        // --- NEW CARD: AMOUNT SENT TO INDIA ---
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showSentAmountDialog = true }, // Open dialog on click
-            shape = RoundedCornerShape(28.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        AnimatedItem(index = 1) {
+            // --- NEW CARD: AMOUNT SENT TO INDIA ---
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .springyTouch()
+                    .clickable { showSentAmountDialog = true }, // Open dialog on click
+                shape = RoundedCornerShape(28.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.money_sent_to_india),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "¥${"%,.0f".format(totalSentToIndia)}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                // --- ACTION BUTTONS ---
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // EDIT button to overwrite the total
-                    IconButton(onClick = { showEditTotalSentDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Total Amount Sent"
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.money_sent_to_india),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        SensitiveText(
+                            text = "$currencySymbol${"%,.0f".format(totalSentToIndia)}",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                color = MaterialTheme.colorScheme.primary
+                            ),
+                            privacyModeEnabled = isPrivacyModeEnabled
                         )
                     }
-                    // ADD button to add a new amount
-                    IconButton(onClick = { showSentAmountDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Amount Sent",
-                            modifier = Modifier.size(40.dp)
-                        )
+                    // --- ACTION BUTTONS ---
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // EDIT button to overwrite the total
+                        IconButton(onClick = { showEditTotalSentDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Total Amount Sent"
+                            )
+                        }
+                        // ADD button to add a new amount
+                        IconButton(onClick = { showSentAmountDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Amount Sent",
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
                     }
                 }
             }
         }
-    }
+        // --- BOTTOM SPACER FOR BREATHING ROOM ---
+        Spacer(modifier = Modifier.height(80.dp))
+    } // End of AnimatedColumn
 
     // --- DIALOGS ---
     if (showGoalEditDialog) {
@@ -188,7 +210,7 @@ fun GoalScreen(
             initialAmountNeeded = goalAmountNeeded,
             onDismiss = { showGoalEditDialog = false },
             onSave = { title, price, amountNeeded ->
-                onSaveGoal(title, price, amountNeeded)
+                onUpdateGoal(title, price, amountNeeded)
                 showGoalEditDialog = false
             }
         )
@@ -196,6 +218,7 @@ fun GoalScreen(
     if (showEditTotalSentDialog) {
         EditTotalSentDialog(
             initialAmount = totalSentToIndia,
+            currencySymbol = currencySymbol,
             onDismiss = { showEditTotalSentDialog = false },
             onSave = { newTotal ->
                 onSetTotalSent(newTotal) // Call the overwrite handler
@@ -205,6 +228,7 @@ fun GoalScreen(
     }
     if (showSentAmountDialog) {
         AddAmountSentDialog(
+            currencySymbol = currencySymbol,
             onDismiss = { showSentAmountDialog = false },
             onAdd = { amount ->
                 onAddToTotalSent(amount)

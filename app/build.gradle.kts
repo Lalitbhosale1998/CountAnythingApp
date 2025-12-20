@@ -62,6 +62,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.compose.material:material-icons-extended:1.6.8")
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.compose.foundation.layout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -71,5 +72,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     val vicoVersion = "1.14.0"
     implementation("com.patrykandpatrick.vico:compose-m3:$vicoVersion")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 }
 

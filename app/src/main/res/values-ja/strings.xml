@@ -10,6 +10,7 @@
 
     <!-- Welcome Screen -->
     <string name="welcome_get_started">始める</string>
+    <string name="welcome_subtitle">日々の歩みを、一つずつ記録しましょう。</string>
 
     <!-- Counter Screen -->
     <string name="counter_cigarettes_today">今日吸ったタバコ</string>
@@ -48,4 +49,12 @@
     <string name="add_one">1つ増やす</string>
     <string name="reset">リセット</string>
     <string name="set_salary_date">給料日を設定</string>
+    <string name="security">セキュリティ</string>
+    <string name="app_lock">アプリのロック (生体認証)</string>
+    <string name="unlock_title">ロック解除</string>
+    <string name="unlock_subtitle">認証が必要です</string>
+    <string name="cancel">キャンセル</string>
+    <string name="app_locked">アプリはロックされています</string>
+    <string name="auth_required">データにアクセスするには認証が必要です</string>
+    <string name="tap_to_unlock">タップしてロック解除</string>
 </resources>

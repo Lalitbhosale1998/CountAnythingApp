@@ -211,6 +211,7 @@ fun GoalEditDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAmountSentDialog(
+    currencySymbol: String,
     onDismiss: () -> Unit,
     onAdd: (amount: Float) -> Unit
 ) {
@@ -236,7 +237,7 @@ fun AddAmountSentDialog(
                             amountInput = newValue
                         }
                     },
-                    label = { Text("Amount in Yen (¥)") },
+                    label = { Text("Amount in $currencySymbol") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -269,6 +270,7 @@ fun AddAmountSentDialog(
 @Composable
 fun EditTotalSentDialog(
     initialAmount: Float,
+    currencySymbol: String,
     onDismiss: () -> Unit,
     onSave: (newTotal: Float) -> Unit
 ) {
@@ -294,7 +296,7 @@ fun EditTotalSentDialog(
                             amountInput = newValue
                         }
                     },
-                    label = { Text("New Total Amount in Yen (¥)") },
+                    label = { Text("New Total Amount in $currencySymbol") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()

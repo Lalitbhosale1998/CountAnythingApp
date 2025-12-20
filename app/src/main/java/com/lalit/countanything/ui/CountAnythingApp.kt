@@ -9,7 +9,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.lalit.countanything.ui.components.AddCounterDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -50,6 +55,7 @@ fun CountAnythingApp(
 ) {
     // --- State for Dialogs ---
     var showDatePicker by remember { mutableStateOf(false) }
+    var showAddCounterDialog by remember { mutableStateOf(false) }
 
     // --- Collect State from ViewModel ---
     val displayedDate by viewModel.displayedDate.collectAsState()
@@ -62,9 +68,10 @@ fun CountAnythingApp(
     val goalPrice by viewModel.goalPrice.collectAsState()
     val goalAmountNeeded by viewModel.goalAmountNeeded.collectAsState()
     val totalSentToIndia by viewModel.totalSentToIndia.collectAsState()
-
-    // --- Derived State ---
-    val daysUntilSalary = viewModel.getDaysUntilSalary()
+    val genericCounters by viewModel.genericCounters.collectAsState()
+    val daysUntilSalary by viewModel.daysUntilSalary.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val isPrivacyModeEnabled by settingsManager.isPrivacyModeEnabled.collectAsState(initial = false)
     val today = LocalDate.now()
     val counterTitle = when (displayedDate) {
         today -> stringResource(R.string.counter_cigarettes_today)
@@ -98,6 +105,16 @@ fun CountAnythingApp(
                         }
                     }
                 )
+            },
+            floatingActionButton = {
+                if (currentScreen == Screen.Counter) {
+                    FloatingActionButton(
+                        onClick = { showAddCounterDialog = true },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Counter")
+                    }
+                }
             }
         ) { innerPadding ->
             Surface(
@@ -125,12 +142,16 @@ fun CountAnythingApp(
                                 onReset = { viewModel.resetCount() },
                                 settingsManager = settingsManager,
                                 daysUntilSalary = daysUntilSalary,
+                                currencySymbol = currencySymbol,
                                 onSetSalaryDate = { showDatePicker = true },
                                 monthlySalaries = monthlySalaries,
                                 monthlySavings = monthlySavings,
                                 onSaveFinancialData = { month, salary, savings ->
                                     viewModel.saveFinancialData(month, salary, savings)
-                                }
+                                },
+                                genericCounters = genericCounters,
+                                onUpdateCounter = { id, delta -> viewModel.updateGenericCounterCount(id, delta) },
+                                onDeleteCounter = { id -> viewModel.deleteGenericCounter(id) }
                             )
                         }
                         Screen.History -> {
@@ -152,7 +173,9 @@ fun CountAnythingApp(
                                 goalTitle = goalTitle,
                                 goalPrice = goalPrice,
                                 goalAmountNeeded = goalAmountNeeded,
-                                onSaveGoal = { title, price, amountNeeded ->
+                                currencySymbol = currencySymbol,
+                                isPrivacyModeEnabled = isPrivacyModeEnabled,
+                                onUpdateGoal = { title, price, amountNeeded ->
                                     viewModel.updateGoal(title, price, amountNeeded)
                                 },
                                 totalSentToIndia = totalSentToIndia,
@@ -201,6 +224,15 @@ fun CountAnythingApp(
             ) {
                 DatePicker(state = datePickerState)
             }
+        }
+        if (showAddCounterDialog) {
+            AddCounterDialog(
+                onDismiss = { showAddCounterDialog = false },
+                onConfirm = { title ->
+                    viewModel.addGenericCounter(title)
+                    showAddCounterDialog = false
+                }
+            )
         }
     }
 }

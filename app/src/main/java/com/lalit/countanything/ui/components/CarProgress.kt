@@ -1,7 +1,8 @@
 package com.lalit.countanything.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -41,7 +42,10 @@ fun CarProgress(
     LaunchedEffect(progress) {
         animatedProgress.animateTo(
             targetValue = progress,
-            animationSpec = tween(durationMillis = 1000)
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
         )
     }
 

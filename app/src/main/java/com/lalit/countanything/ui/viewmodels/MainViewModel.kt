@@ -3,11 +3,10 @@ package com.lalit.countanything.ui.viewmodels
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.lalit.countanything.SettingsManager
+import com.lalit.countanything.Currency
 import com.lalit.countanything.StorageHelper
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -19,6 +18,7 @@ import java.time.temporal.ChronoUnit
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context = application.applicationContext
+    private val settingsManager = SettingsManager(application)
 
     // --- State: Date Tracking ---
     private val _displayedDate = MutableStateFlow(LocalDate.now())
@@ -41,9 +41,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _monthlySavings = MutableStateFlow<Map<String, Float>>(emptyMap())
     val monthlySavings: StateFlow<Map<String, Float>> = _monthlySavings.asStateFlow()
 
+    // --- Reactive Calculation: Days Until Salary ---
+    val daysUntilSalary: StateFlow<Long?> = _salaryDay
+        .map { date -> calculateDaysUntil(date) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     // --- State: Goals ---
     private val _goalTitle = MutableStateFlow("Buy Toyota GR86 SZ Manual")
     val goalTitle: StateFlow<String> = _goalTitle.asStateFlow()
+
+    // --- CURRENCY ---
+    val currencySymbol: StateFlow<String> = settingsManager.currency
+        .map { it.symbol }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "¥")
 
     private val _goalPrice = MutableStateFlow(3195000f)
     val goalPrice: StateFlow<Float> = _goalPrice.asStateFlow()
@@ -54,6 +64,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _totalSentToIndia = MutableStateFlow(0f)
     val totalSentToIndia: StateFlow<Float> = _totalSentToIndia.asStateFlow()
 
+    // --- State: Generic Counters ---
+    private val _genericCounters = MutableStateFlow<List<com.lalit.countanything.ui.models.Counter>>(emptyList())
+    val genericCounters: StateFlow<List<com.lalit.countanything.ui.models.Counter>> = _genericCounters.asStateFlow()
 
     private val historyDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     private val monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
@@ -86,6 +99,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 _salaryDay.value = nextDate
             }
+            
+            _genericCounters.value = StorageHelper.loadGenericCounters(context)
         }
     }
 
@@ -132,10 +147,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun getDaysUntilSalary(): Long? {
-        return _salaryDay.value?.let { date ->
+        return calculateDaysUntil(_salaryDay.value)
+    }
+
+    private fun calculateDaysUntil(date: LocalDate?): Long? {
+        return date?.let { d ->
             val today = LocalDate.now()
-            // Recalculate based on current logic (reused from App)
-            val salaryDayOfMonth = date.dayOfMonth
+            val salaryDayOfMonth = d.dayOfMonth
             var nextSalaryDate = today.withDayOfMonth(salaryDayOfMonth)
             if (today.dayOfMonth > salaryDayOfMonth) {
                 nextSalaryDate = nextSalaryDate.plusMonths(1)
@@ -177,6 +195,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _totalSentToIndia.value = newTotal
         viewModelScope.launch {
             StorageHelper.saveTotalSent(context, newTotal)
+        }
+    }
+
+    // --- Actions: Generic Counters ---
+
+    fun addGenericCounter(title: String) {
+        val newCounter = com.lalit.countanything.ui.models.Counter(title = title, type = com.lalit.countanything.ui.models.CounterType.STANDARD)
+        _genericCounters.update { it + newCounter }
+        saveCounters()
+    }
+
+    fun deleteGenericCounter(id: String) {
+        _genericCounters.update { list -> list.filter { it.id != id } }
+        saveCounters()
+    }
+
+    fun updateGenericCounterCount(id: String, delta: Int) {
+        _genericCounters.update { list ->
+            list.map { counter ->
+                if (counter.id == id) {
+                    val newCount = (counter.count + delta).coerceAtLeast(0)
+                    // Update history for today
+                    val todayKey = LocalDate.now().format(historyDateFormatter)
+                    val newHistory = counter.history.toMutableMap()
+                    newHistory[todayKey] = newCount
+                    
+                    counter.copy(count = newCount, history = newHistory)
+                } else {
+                    counter
+                }
+            }
+        }
+        saveCounters()
+    }
+
+    private fun saveCounters() {
+        viewModelScope.launch {
+            StorageHelper.saveGenericCounters(context, _genericCounters.value)
         }
     }
 }

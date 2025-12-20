@@ -7,6 +7,9 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import com.lalit.countanything.ui.models.Counter
+import com.lalit.countanything.ui.models.CounterType
+import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 import java.time.YearMonth
@@ -16,6 +19,7 @@ object StorageHelper {
     data class GoalData(val title: String, val price: Float, val amountNeeded: Float)
     // --- Preference Keys ---
     private val DAILY_COUNTS = stringPreferencesKey("daily_cigarette_counts")
+    private val GENERIC_COUNTERS = stringPreferencesKey("generic_counters") // NEW: List of all custom counters
     private val SALARY_DAY = intPreferencesKey("salary_day")
     // NEW: Keys for financial data
     private val MONTHLY_SALARIES = stringPreferencesKey("monthly_salaries")
@@ -174,6 +178,62 @@ object StorageHelper {
             savingsMap[monthKey] = json.getDouble(monthKey).toFloat()
         }
         return savingsMap
+    }
+
+    // --- NEW: Generic Multi-Counter Functions ---
+
+    suspend fun saveGenericCounters(context: Context, counters: List<Counter>) {
+        val jsonArray = JSONArray()
+        counters.forEach { counter ->
+            val counterObj = JSONObject()
+            counterObj.put("id", counter.id)
+            counterObj.put("title", counter.title)
+            counterObj.put("count", counter.count)
+            counterObj.put("type", counter.type.name) // Save Type
+            
+            // Serialize history
+            val historyJson = JSONObject()
+            counter.history.forEach { (date, count) ->
+                historyJson.put(date, count)
+            }
+            counterObj.put("history", historyJson)
+            
+            jsonArray.put(counterObj)
+        }
+
+        context.dataStore.edit { settings ->
+            settings[GENERIC_COUNTERS] = jsonArray.toString()
+        }
+    }
+
+    suspend fun loadGenericCounters(context: Context): List<Counter> {
+        val jsonString = context.dataStore.data.first()[GENERIC_COUNTERS] ?: "[]"
+        val jsonArray = JSONArray(jsonString)
+        val counters = mutableListOf<Counter>()
+
+        for (i in 0 until jsonArray.length()) {
+            val obj = jsonArray.getJSONObject(i)
+            val id = obj.getString("id")
+            val title = obj.getString("title")
+            val count = obj.optInt("count", 0)
+            
+            // Load Type safely
+            val typeStr = obj.optString("type", CounterType.STANDARD.name)
+            val type = try {
+                CounterType.valueOf(typeStr)
+            } catch (e: Exception) {
+                CounterType.STANDARD
+            }
+            
+            val historyObj = obj.optJSONObject("history") ?: JSONObject()
+            val historyMap = mutableMapOf<String, Int>()
+            historyObj.keys().forEach { dateKey ->
+                historyMap[dateKey] = historyObj.getInt(dateKey)
+            }
+
+            counters.add(Counter(id, title, count, type, historyMap))
+        }
+        return counters
     }
 
     // --- Import / Export ---
