@@ -1,5 +1,3 @@
-// In: app/src/main/java/com/lalit/countanything/ui/theme/Type.kt
-
 package com.lalit.countanything.ui.theme
 
 import androidx.compose.material3.Typography

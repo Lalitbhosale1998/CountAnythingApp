@@ -175,4 +175,33 @@ object StorageHelper {
         }
         return savingsMap
     }
+
+    // --- Import / Export ---
+    suspend fun exportAllData(context: Context): String {
+        val prefs = context.dataStore.data.first()
+        val exportJson = JSONObject()
+        prefs.asMap().forEach { (key, value) ->
+            exportJson.put(key.name, value)
+        }
+        return exportJson.toString()
+    }
+
+    suspend fun importAllData(context: Context, jsonString: String) {
+        val json = JSONObject(jsonString)
+        context.dataStore.edit { prefs ->
+            // Clear existing data? Or merge? Let's overwrite for simple restore.
+            // prefs.clear() // Optional: Clear to ensure clean state
+            
+            // We need to map strings back to the correct keys. 
+            // Since we know our keys, we can look them up.
+            if (json.has("daily_cigarette_counts")) prefs[DAILY_COUNTS] = json.getString("daily_cigarette_counts")
+            if (json.has("salary_day")) prefs[SALARY_DAY] = json.getInt("salary_day")
+            if (json.has("monthly_salaries")) prefs[MONTHLY_SALARIES] = json.getString("monthly_salaries")
+            if (json.has("monthly_savings")) prefs[MONTHLY_SAVINGS] = json.getString("monthly_savings")
+            if (json.has("goal_title")) prefs[GOAL_TITLE] = json.getString("goal_title")
+            if (json.has("goal_price")) prefs[GOAL_PRICE] = json.getDouble("goal_price").toFloat()
+            if (json.has("goal_amount_needed")) prefs[GOAL_AMOUNT_NEEDED] = json.getDouble("goal_amount_needed").toFloat()
+            if (json.has("total_sent_to_india")) prefs[TOTAL_SENT_TO_INDIA] = json.getDouble("total_sent_to_india").toFloat()
+        }
+    }
 }
