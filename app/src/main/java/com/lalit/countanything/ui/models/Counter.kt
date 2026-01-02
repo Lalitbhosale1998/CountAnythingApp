@@ -7,13 +7,19 @@ import java.util.UUID
  */
 enum class CounterType {
     STANDARD,
-    CURRENCY
+    FINANCE_COUNTDOWN,
+    FINANCE_BUDGET_HUB,
+    FINANCE_CUMULATIVE,
+    SEXUAL_HEALTH
 }
 
 data class Counter(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
-    val count: Int = 0,
-    val type: CounterType = CounterType.STANDARD, // NEW: Defaults to Standard
-    val history: Map<String, Int> = emptyMap() // Date (YYYY-MM-DD) -> Count
+    val count: Float = 0f,
+    val type: CounterType = CounterType.STANDARD,
+    val history: Map<String, Float> = emptyMap(), // Date (YYYY-MM-DD) -> Count
+    val targetDate: String? = null, // For FINANCE_COUNTDOWN (YYYY-MM-DD)
+    val monthlySalaries: Map<String, Float> = emptyMap(), // For FINANCE_BUDGET_HUB
+    val monthlySavings: Map<String, Float> = emptyMap() // For FINANCE_BUDGET_HUB
 )

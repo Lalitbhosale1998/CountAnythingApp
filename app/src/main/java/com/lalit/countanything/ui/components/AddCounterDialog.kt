@@ -2,59 +2,82 @@ package com.lalit.countanything.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import com.lalit.countanything.ui.models.CounterType
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddCounterDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String, CounterType) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(CounterType.STANDARD) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "New Counter") },
+        title = { Text(text = "New Tracker") },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(text = "What do you want to track?")
-                Spacer(modifier = Modifier.height(16.dp))
+                
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Counter Name") },
+                    label = { Text("Tracker Name") },
+                    placeholder = { Text("e.g. Daily Meditation") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Text(
+                    text = "Type",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    FilterChip(
+                        selected = selectedType == CounterType.STANDARD,
+                        onClick = { selectedType = CounterType.STANDARD },
+                        label = { Text("Standard") },
+                        leadingIcon = if (selectedType == CounterType.STANDARD) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                        } else null
+                    )
+                    FilterChip(
+                        selected = selectedType == CounterType.SEXUAL_HEALTH,
+                        onClick = { selectedType = CounterType.SEXUAL_HEALTH },
+                        label = { Text("Sexual Health") },
+                        leadingIcon = if (selectedType == CounterType.SEXUAL_HEALTH) {
+                            { Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                        } else null
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     if (title.isNotBlank()) {
-                        onConfirm(title)
+                        onConfirm(title, selectedType)
                     }
                 },
                 enabled = title.isNotBlank()

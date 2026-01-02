@@ -17,8 +17,17 @@ import java.time.format.DateTimeFormatter
 
 object StorageHelper {
     data class GoalData(val title: String, val price: Float, val amountNeeded: Float)
+    // NEW: Event Data Class
+    data class Event(
+        val id: String,
+        val title: String,
+        val date: String, // ISO-8601 LocalDate yyyy-MM-dd
+        val time: String?, // ISO-8601 LocalTime HH:mm (nullable)
+        val isRecurring: Boolean
+    )
     // --- Preference Keys ---
     private val DAILY_COUNTS = stringPreferencesKey("daily_cigarette_counts")
+    private val DAILY_SEXUAL_HEALTH_COUNTS = stringPreferencesKey("daily_sexual_health_counts")
     private val GENERIC_COUNTERS = stringPreferencesKey("generic_counters") // NEW: List of all custom counters
     private val SALARY_DAY = intPreferencesKey("salary_day")
     // NEW: Keys for financial data
@@ -28,6 +37,9 @@ object StorageHelper {
     private val GOAL_TITLE = stringPreferencesKey("goal_title")
     private val GOAL_PRICE = floatPreferencesKey("goal_price")
     private val GOAL_AMOUNT_NEEDED = floatPreferencesKey("goal_amount_needed")
+    // NEW: Events Key
+    private val EVENTS = stringPreferencesKey("events_list")
+    private val GARBAGE_SCHEDULE = stringPreferencesKey("garbage_schedule")
 
     // --- Formatters ---
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -41,7 +53,7 @@ object StorageHelper {
      * Saves the cigarette count for a specific date into the JSON object.
      * This is now a suspend function and does not block the main thread.
      */
-    suspend fun saveCountForDate(context: Context, date: LocalDate, count: Int) {
+    suspend fun saveCountForDate(context: Context, date: LocalDate, count: Float) {
         val dateKey = date.format(dateFormatter)
         context.dataStore.edit { settings ->
             val jsonString = settings[DAILY_COUNTS] ?: "{}"
@@ -83,23 +95,23 @@ object StorageHelper {
      * Loads the cigarette count for a specific date from the JSON object.
      * This is now a suspend function. Returns 0 if no count is found.
      */
-    suspend fun loadCountForDate(context: Context, date: LocalDate): Int {
+    suspend fun loadCountForDate(context: Context, date: LocalDate): Float {
         val dateKey = date.format(dateFormatter)
         val jsonString = context.dataStore.data.first()[DAILY_COUNTS] ?: "{}"
         val json = JSONObject(jsonString)
-        return json.optInt(dateKey, 0)
+        return json.optDouble(dateKey, 0.0).toFloat()
     }
 
     /**
      * Loads all saved counts from the JSON object.
      * This is used to populate the entire calendar history.
      */
-    suspend fun loadRecentCounts(context: Context): Map<String, Int> {
+    suspend fun loadRecentCounts(context: Context): Map<String, Float> {
         val jsonString = context.dataStore.data.first()[DAILY_COUNTS] ?: "{}"
         val json = JSONObject(jsonString)
-        val countsMap = mutableMapOf<String, Int>()
+        val countsMap = mutableMapOf<String, Float>()
         json.keys().forEach { dateKey ->
-            countsMap[dateKey] = json.getInt(dateKey)
+            countsMap[dateKey] = json.getDouble(dateKey).toFloat()
         }
         return countsMap
     }
@@ -188,15 +200,30 @@ object StorageHelper {
             val counterObj = JSONObject()
             counterObj.put("id", counter.id)
             counterObj.put("title", counter.title)
-            counterObj.put("count", counter.count)
-            counterObj.put("type", counter.type.name) // Save Type
+            counterObj.put("count", counter.count.toDouble())
+            counterObj.put("type", counter.type.name)
             
             // Serialize history
             val historyJson = JSONObject()
             counter.history.forEach { (date, count) ->
-                historyJson.put(date, count)
+                historyJson.put(date, count.toDouble())
             }
             counterObj.put("history", historyJson)
+            
+            // Serialize NEW Finance Fields
+            counter.targetDate?.let { counterObj.put("targetDate", it) }
+            
+            val salariesJson = JSONObject()
+            counter.monthlySalaries.forEach { (month, amount) ->
+                salariesJson.put(month, amount.toDouble())
+            }
+            counterObj.put("monthlySalaries", salariesJson)
+
+            val savingsJson = JSONObject()
+            counter.monthlySavings.forEach { (month, amount) ->
+                savingsJson.put(month, amount.toDouble())
+            }
+            counterObj.put("monthlySavings", savingsJson)
             
             jsonArray.put(counterObj)
         }
@@ -215,9 +242,8 @@ object StorageHelper {
             val obj = jsonArray.getJSONObject(i)
             val id = obj.getString("id")
             val title = obj.getString("title")
-            val count = obj.optInt("count", 0)
+            val count = obj.optDouble("count", 0.0).toFloat()
             
-            // Load Type safely
             val typeStr = obj.optString("type", CounterType.STANDARD.name)
             val type = try {
                 CounterType.valueOf(typeStr)
@@ -226,14 +252,69 @@ object StorageHelper {
             }
             
             val historyObj = obj.optJSONObject("history") ?: JSONObject()
-            val historyMap = mutableMapOf<String, Int>()
+            val historyMap = mutableMapOf<String, Float>()
             historyObj.keys().forEach { dateKey ->
-                historyMap[dateKey] = historyObj.getInt(dateKey)
+                historyMap[dateKey] = historyObj.getDouble(dateKey).toFloat()
             }
 
-            counters.add(Counter(id, title, count, type, historyMap))
+            // Load NEW Finance Fields
+            val targetDate = if (obj.has("targetDate")) obj.getString("targetDate") else null
+            
+            val salariesObj = obj.optJSONObject("monthlySalaries") ?: JSONObject()
+            val salariesMap = mutableMapOf<String, Float>()
+            salariesObj.keys().forEach { monthKey ->
+                salariesMap[monthKey] = salariesObj.getDouble(monthKey).toFloat()
+            }
+
+            val savingsObj = obj.optJSONObject("monthlySavings") ?: JSONObject()
+            val savingsMap = mutableMapOf<String, Float>()
+            savingsObj.keys().forEach { monthKey ->
+                savingsMap[monthKey] = savingsObj.getDouble(monthKey).toFloat()
+            }
+
+            counters.add(
+                Counter(
+                    id = id,
+                    title = title,
+                    count = count,
+                    type = type,
+                    history = historyMap,
+                    targetDate = targetDate,
+                    monthlySalaries = salariesMap,
+                    monthlySavings = savingsMap
+                )
+            )
         }
         return counters
+    }
+
+    // --- Sexual Health Permanent Storage ---
+
+    suspend fun saveSexualHealthForDate(context: Context, date: LocalDate, count: Float) {
+        val dateKey = date.format(dateFormatter)
+        context.dataStore.edit { settings ->
+            val jsonString = settings[DAILY_SEXUAL_HEALTH_COUNTS] ?: "{}"
+            val json = JSONObject(jsonString)
+            json.put(dateKey, count)
+            settings[DAILY_SEXUAL_HEALTH_COUNTS] = json.toString()
+        }
+    }
+
+    suspend fun loadSexualHealthForDate(context: Context, date: LocalDate): Float {
+        val dateKey = date.format(dateFormatter)
+        val jsonString = context.dataStore.data.first()[DAILY_SEXUAL_HEALTH_COUNTS] ?: "{}"
+        val json = JSONObject(jsonString)
+        return json.optDouble(dateKey, 0.0).toFloat()
+    }
+
+    suspend fun loadRecentSexualHealthCounts(context: Context): Map<String, Float> {
+        val jsonString = context.dataStore.data.first()[DAILY_SEXUAL_HEALTH_COUNTS] ?: "{}"
+        val json = JSONObject(jsonString)
+        val countsMap = mutableMapOf<String, Float>()
+        json.keys().forEach { dateKey ->
+            countsMap[dateKey] = json.getDouble(dateKey).toFloat()
+        }
+        return countsMap
     }
 
     // --- Import / Export ---
@@ -262,6 +343,75 @@ object StorageHelper {
             if (json.has("goal_price")) prefs[GOAL_PRICE] = json.getDouble("goal_price").toFloat()
             if (json.has("goal_amount_needed")) prefs[GOAL_AMOUNT_NEEDED] = json.getDouble("goal_amount_needed").toFloat()
             if (json.has("total_sent_to_india")) prefs[TOTAL_SENT_TO_INDIA] = json.getDouble("total_sent_to_india").toFloat()
+            if (json.has("events_list")) prefs[EVENTS] = json.getString("events_list")
         }
+    }
+
+    // --- Events Functions ---
+
+    suspend fun saveEvents(context: Context, events: List<Event>) {
+        val jsonArray = JSONArray()
+        events.forEach { event ->
+            val obj = JSONObject()
+            obj.put("id", event.id)
+            obj.put("title", event.title)
+            obj.put("date", event.date)
+            obj.put("time", event.time ?: JSONObject.NULL)
+            obj.put("isRecurring", event.isRecurring)
+            jsonArray.put(obj)
+        }
+        context.dataStore.edit { settings ->
+            settings[EVENTS] = jsonArray.toString()
+        }
+    }
+
+    suspend fun loadEvents(context: Context): List<Event> {
+        val jsonString = context.dataStore.data.first()[EVENTS] ?: "[]"
+        val jsonArray = JSONArray(jsonString)
+        val events = mutableListOf<Event>()
+        for (i in 0 until jsonArray.length()) {
+            val obj = jsonArray.getJSONObject(i)
+            val id = obj.getString("id")
+            val title = obj.getString("title")
+            val date = obj.getString("date")
+            val time = if (obj.isNull("time")) null else obj.getString("time")
+            val isRecurring = obj.optBoolean("isRecurring", false)
+            events.add(Event(id, title, date, time, isRecurring))
+        }
+        return events
+    }
+
+
+    // --- Gomi (Garbage) Schedule ---
+
+    suspend fun saveGarbageSchedule(context: Context, schedule: Map<String, List<String>>) {
+        val jsonObject = JSONObject()
+        schedule.forEach { (day, types) ->
+            val jsonArray = JSONArray()
+            types.forEach { type -> jsonArray.put(type) }
+            jsonObject.put(day, jsonArray)
+        }
+        context.dataStore.edit { settings ->
+            settings[GARBAGE_SCHEDULE] = jsonObject.toString()
+        }
+    }
+
+    suspend fun loadGarbageSchedule(context: Context): Map<String, List<String>> {
+        val jsonString = context.dataStore.data.first()[GARBAGE_SCHEDULE] ?: "{}"
+        val jsonObject = JSONObject(jsonString)
+        val schedule = mutableMapOf<String, List<String>>()
+        
+        val days = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
+        days.forEach { day ->
+            val types = mutableListOf<String>()
+            val array = jsonObject.optJSONArray(day)
+            if (array != null) {
+                for (i in 0 until array.length()) {
+                    types.add(array.getString(i))
+                }
+            }
+            schedule[day] = types
+        }
+        return schedule
     }
 }

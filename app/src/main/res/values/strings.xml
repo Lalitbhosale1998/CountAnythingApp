@@ -1,11 +1,16 @@
 <resources>
-    <string name="app_name" translatable="false">マイログ</string>
+    <string name="app_name" translatable="false">YOROZU</string>
 
     <!-- Navigation -->
-    <string name="nav_counter" translatable="false">Counter</string>
+    <string name="nav_habits" translatable="false">Habits</string>
+    <string name="nav_finance" translatable="false">Finance</string>
     <string name="nav_history" translatable="false">History</string>
     <string name="nav_goal" translatable="false">Goal</string>
     <string name="nav_settings" translatable="false">Settings</string>
+    <string name="nav_study" translatable="false">Study</string>
+    <string name="nav_events" translatable="false">Events</string>
+    <string name="nav_tools" translatable="false">Tools</string>
+    <string name="cigarette_history_log" translatable="false">Cigarette History Log</string>
 
     <!-- Welcome Screen -->
     <string name="welcome_get_started" translatable="false">Get Started</string>
@@ -49,11 +54,23 @@
     <string name="reset" translatable="false">Reset</string>
     <string name="set_salary_date" translatable="false">Set Salary Date</string>
     <string name="security" translatable="false">Security</string>
-    <string name="app_lock" translatable="false">App Lock (Biometric)</string>
+    <string name="app_lock" translatable="false">App Lock (Face / Fingerprint)</string>
     <string name="unlock_title" translatable="false">Unlock Count Anything</string>
     <string name="unlock_subtitle" translatable="false">Authentication required</string>
     <string name="cancel" translatable="false">Cancel</string>
     <string name="app_locked" translatable="false">App Locked</string>
     <string name="auth_required" translatable="false">Authentication required to access your data.</string>
     <string name="tap_to_unlock" translatable="false">Tap to Unlock</string>
+
+
+    <!-- Notification -->
+    <string name="notification_channel_name" translatable="false">Daily Reminder</string>
+    <string name="notification_channel_description" translatable="false">Reminds you to write your diary at 10:30 PM</string>
+    <string name="notification_title" translatable="false">Time for your diary!</string>
+    <string name="notification_content" translatable="false">It\'s 10:30 PM. How was your day? Log it now.</string>
+    <string name="daily_reminder_title" translatable="false">Daily Diary Reminder</string>
+    <string name="daily_reminder_subtitle" translatable="false">Get notified at 10:30 PM every day</string>
+    <string name="notifications" translatable="false">Notifications</string>
+    <string name="permission_required" translatable="false">Permission Required</string>
+    <string name="notification_permission_rationale" translatable="false">Please allow notifications to receive your daily reminder.</string>
 </resources>

@@ -1,122 +1,224 @@
 package com.lalit.countanything.ui.components
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Analytics
-import androidx.compose.material.icons.outlined.CalendarToday
-import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.lalit.countanything.ui.models.Screen
-
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lalit.countanything.R
+import com.lalit.countanything.ui.models.Screen
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BottomNavigationBar(currentScreen: Screen, onScreenSelected: (Screen) -> Unit) {
-    NavigationBar {
-        // --- COUNTER ITEM ---
-        CustomNavigationBarItem(
-            label = stringResource(R.string.nav_counter),
-            isSelected = currentScreen == Screen.Counter,
-            selectedIcon = Icons.Filled.CalendarToday,
-            unselectedIcon = Icons.Outlined.CalendarToday,
-            onClick = { onScreenSelected(Screen.Counter) }
-        )
+fun BottomNavigationBar(
+    currentScreen: Screen, 
+    onScreenSelected: (Screen) -> Unit,
+    onScreenLongClick: (Screen) -> Unit = {}
+) {
+    val haptic = LocalHapticFeedback.current
+    val screens = Screen.values()
 
-        // --- HISTORY/INSIGHTS ITEM ---
-        CustomNavigationBarItem(
-            label = stringResource(R.string.nav_history),
-            isSelected = currentScreen == Screen.History,
-            selectedIcon = Icons.Filled.Analytics,
-            unselectedIcon = Icons.Outlined.Analytics,
-            onClick = { onScreenSelected(Screen.History) }
-        )
-        CustomNavigationBarItem(
-            label = stringResource(R.string.nav_goal),
-            isSelected = currentScreen == Screen.Goal,
-            selectedIcon = Icons.Filled.Flag,
-            unselectedIcon = Icons.Outlined.Flag,
-            onClick = { onScreenSelected(Screen.Goal) }
-        )
-        // --- NEW: SETTINGS ITEM ---
-        CustomNavigationBarItem(
-            label = stringResource(R.string.nav_settings),
-            isSelected = currentScreen == Screen.Settings,
-            selectedIcon = Icons.Filled.Settings,
-            unselectedIcon = Icons.Outlined.Settings,
-            onClick = { onScreenSelected(Screen.Settings) }
-        )
+    Surface(
+        tonalElevation = 1.dp,
+        shadowElevation = 16.dp, // Neumorphic lift
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()) // Allow scrolling
+                .navigationBarsPadding()
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp), // Use spacedBy instead of SpaceBetween for scrollable row
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            screens.forEach { screen ->
+                BubbleNavItem(
+                    screen = screen,
+                    isSelected = currentScreen == screen,
+                    onClick = {
+                        if (currentScreen != screen) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onScreenSelected(screen)
+                        }
+                    },
+                    onLongClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onScreenLongClick(screen)
+                    }
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun RowScope.CustomNavigationBarItem(
-    label: String,
+fun BubbleNavItem(
+    screen: Screen,
     isSelected: Boolean,
-    selectedIcon: ImageVector,
-    unselectedIcon: ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
-    // Animate the scale of the icon
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.1f else 1.0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "IconScale"
+    val interactionSource = remember { MutableInteractionSource() }
+    
+    // Style Mapping for "Fluid Bubble" with Neon Vibrancy
+    val (bubbleColor, icon) = when (screen) {
+        Screen.Habits -> {
+            Color(0xFF00E676) to 
+                (if (isSelected) Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome)
+        }
+        Screen.Finance -> {
+            Color(0xFFFFC107) to 
+                (if (isSelected) Icons.Filled.AccountBalanceWallet else Icons.Outlined.AccountBalanceWallet)
+        }
+        Screen.Goal -> {
+            Color(0xFF2196F3) to 
+                (if (isSelected) Icons.Filled.Flag else Icons.Outlined.Flag)
+        }
+        Screen.History -> {
+            Color(0xFF9C27B0) to 
+                (if (isSelected) Icons.Filled.History else Icons.Outlined.History)
+        }
+        Screen.Settings -> {
+            Color(0xFF607D8B) to 
+                (if (isSelected) Icons.Filled.Settings else Icons.Outlined.Settings)
+        }
+        Screen.Study -> {
+            Color(0xFF3F51B5) to
+                (if (isSelected) Icons.Filled.School else Icons.Outlined.School)
+        }
+        Screen.Events -> {
+            Color(0xFFE91E63) to
+                (if (isSelected) Icons.Filled.Event else Icons.Outlined.Event)
+        }
+        Screen.Tools -> {
+             Color(0xFFFF5722) to
+                (if (isSelected) Icons.Filled.Build else Icons.Outlined.Build)
+        }
+    }
+
+    val labelRes = when (screen) {
+        Screen.Habits -> R.string.nav_habits
+        Screen.Finance -> R.string.nav_finance
+        Screen.Goal -> R.string.nav_goal
+        Screen.History -> R.string.nav_history
+        Screen.Settings -> R.string.nav_settings
+        Screen.Study -> R.string.nav_study
+        Screen.Events -> R.string.nav_events
+        Screen.Tools -> R.string.nav_tools
+    }
+
+    val bubbleScale by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0.8f,
+        animationSpec = spring(
+            dampingRatio = 0.45f, // Jelly bounce
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "BubbleScale"
     )
 
-    // Animate the vertical offset of the icon
-    val offset by animateFloatAsState(
-        targetValue = if (isSelected) -5f else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy),
-        label = "IconOffset"
-    )
-
-    NavigationBarItem(
-        selected = isSelected,
-        onClick = onClick,
-        label = { Text(label) },
-        icon = {
-            AnimatedContent(
-                targetState = isSelected,
-                label = "IconAnimation",
-                transitionSpec = {
-                    scaleIn(animationSpec = spring(stiffness = Spring.StiffnessLow)) togetherWith
-                            scaleOut(animationSpec = spring(stiffness = Spring.StiffnessHigh))
+    Box(
+        modifier = Modifier
+            .height(48.dp)
+            .clip(CircleShape)
+            .clip(CircleShape)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+                onLongClick = {
+                     // Haptic feedback for long press
+                     // Note: We'll trigger haptic in the lambda if needed
+                     onLongClick()
                 }
-            ) { isCurrentlySelected ->
-                Icon(
-                    imageVector = if (isCurrentlySelected) selectedIcon else unselectedIcon,
-                    contentDescription = label,
-                    modifier = Modifier
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            translationY = offset
-                        }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // --- THE JELLY BUBBLE ---
+        AnimatedVisibility(
+            visible = isSelected,
+            enter = scaleIn(animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+            exit = scaleOut(animationSpec = tween(150)) + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(horizontal = 4.dp)
+                    .widthIn(min = 110.dp)
+                    .graphicsLayer {
+                        scaleX = bubbleScale
+                        scaleY = bubbleScale
+                    }
+                    .background(bubbleColor.copy(alpha = 0.2f), CircleShape)
+            )
+        }
+
+    val iconJump by animateFloatAsState(
+        targetValue = if (isSelected) -12f else 0f,
+        animationSpec = spring(
+            dampingRatio = 0.4f,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "IconJump"
+    )
+
+    Row(
+        modifier = Modifier.padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = stringResource(labelRes),
+            tint = if (isSelected) bubbleColor else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .graphicsLayer { translationY = iconJump }
+                .size(24.dp)
+        )
+            
+            AnimatedVisibility(
+                visible = isSelected,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally()
+            ) {
+                Text(
+                    text = stringResource(labelRes),
+                    modifier = Modifier.padding(start = 8.dp),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = bubbleColor.copy(alpha = 1f)
+                    ),
+                    maxLines = 1
                 )
             }
         }
-    )
+    }
 }
+
+

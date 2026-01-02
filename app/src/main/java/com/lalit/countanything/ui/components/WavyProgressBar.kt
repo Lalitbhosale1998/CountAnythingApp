@@ -46,23 +46,23 @@ fun WavyProgressBar(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(24.dp)
+            .height(48.dp) // Taller for "Bold" presence
     ) {
-        val strokeWidth = size.height * 0.8f // Make the wave a bit thicker
-        val capRadius = strokeWidth / 2
-        val progressEndPx = lerp(0f, size.width, progress)
+        val strokeWidth = 16.dp.toPx() // Significantly thicker stroke
+        val progressEndPx = size.width * progress
 
-        // 1. Draw the wavy filled portion first
+        // 1. Draw the wavy filled portion
         if (progress > 0f) {
             val wavePath = Path()
-            val waveAmplitude = strokeWidth * 0.3f // How high the waves are
-            val waveFrequency = 0.05f // How many waves appear
+            val waveAmplitude = 10.dp.toPx() // Bolder, more pronounced waves
+            val waveFrequency = 0.04f 
 
             wavePath.moveTo(0f, center.y)
             for (x in 0..progressEndPx.toInt()) {
                 val y = center.y + sin(x * waveFrequency + wavePhase) * waveAmplitude
                 wavePath.lineTo(x.toFloat(), y)
             }
+            
             drawPath(
                 path = wavePath,
                 color = waveColor,
@@ -74,13 +74,14 @@ fun WavyProgressBar(
             )
         }
 
-        // 2. Draw the remaining track starting AFTER the wavy part ends
+        // 2. Draw the remaining track
         if (progress < 1f) {
-            // Also draw the small dot at the end of the track
-            drawCircle(
-                color = waveColor,
-                radius = capRadius * 0.3f,
-                center = Offset(x = size.width - capRadius, y = center.y)
+            drawLine(
+                color = trackColor,
+                start = Offset(x = progressEndPx, y = center.y),
+                end = Offset(x = size.width, y = center.y),
+                strokeWidth = strokeWidth, // Match the wave thickness
+                cap = StrokeCap.Round
             )
         }
     }

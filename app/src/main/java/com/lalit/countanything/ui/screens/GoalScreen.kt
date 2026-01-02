@@ -1,5 +1,6 @@
 package com.lalit.countanything.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,6 +48,7 @@ import com.lalit.countanything.ui.components.AddAmountSentDialog
 import com.lalit.countanything.ui.components.AnimatedItem
 import com.lalit.countanything.ui.components.EditTotalSentDialog
 import com.lalit.countanything.ui.components.SensitiveText
+import com.lalit.countanything.ui.components.WavyProgressBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,26 +57,22 @@ fun GoalScreen(
     goalTitle: String,
     goalPrice: Float,
     goalAmountNeeded: Float,
-    totalSentToIndia: Float,
     currencySymbol: String,
     isPrivacyModeEnabled: Boolean,
-    onUpdateGoal: (title: String, price: Float, amountNeeded: Float) -> Unit,
-    onAddToTotalSent: (Float) -> Unit,
-    onSetTotalSent: (Float) -> Unit
+    onUpdateGoal: (title: String, price: Float, amountNeeded: Float) -> Unit
 ) {
     // --- State for the Edit Dialogs ---
     var showGoalEditDialog by remember { mutableStateOf(false) }
-    var showSentAmountDialog by remember { mutableStateOf(false) }
 
     // --- Calculations ---
     val totalSaved = monthlySavings.values.sum()
     val amountStillNeeded = (goalAmountNeeded - totalSaved).coerceAtLeast(0f)
     val goalProgress = if (goalAmountNeeded > 0) (totalSaved / goalAmountNeeded).coerceIn(0f, 1f) else 0f
-    var showEditTotalSentDialog by remember { mutableStateOf(false) }
 
     AnimatedColumn(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -95,7 +97,9 @@ fun GoalScreen(
                     ) {
                         Text(
                             text = goalTitle,
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                color = Color(0xFFFFAB40) // Sunset Orange
+                            ),
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f, fill = false)
@@ -110,17 +114,14 @@ fun GoalScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(32.dp))
-                    // --- NEW CAR ANIMATION ---
-                    com.lalit.countanything.ui.components.CarProgress(
+                    
+                    // --- WAVY PROGRESS ---
+                    WavyProgressBar(
                         progress = goalProgress,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp),
-                        fillColor = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
                     Text(
                         text = "${(goalProgress * 100).toInt()}%",
                         style = MaterialTheme.typography.displaySmall,
@@ -134,8 +135,8 @@ fun GoalScreen(
                     SensitiveText(
                         text = "$currencySymbol${"%,.0f".format(amountStillNeeded)}",
                         style = MaterialTheme.typography.displayMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF00E676) // Keep Vibrant Emerald
                         ),
                         privacyModeEnabled = isPrivacyModeEnabled
                     )
@@ -149,55 +150,6 @@ fun GoalScreen(
             }
         }
 
-        AnimatedItem(index = 1) {
-            // --- NEW CARD: AMOUNT SENT TO INDIA ---
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .springyTouch()
-                    .clickable { showSentAmountDialog = true }, // Open dialog on click
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            stringResource(R.string.money_sent_to_india),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        SensitiveText(
-                            text = "$currencySymbol${"%,.0f".format(totalSentToIndia)}",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                color = MaterialTheme.colorScheme.primary
-                            ),
-                            privacyModeEnabled = isPrivacyModeEnabled
-                        )
-                    }
-                    // --- ACTION BUTTONS ---
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // EDIT button to overwrite the total
-                        IconButton(onClick = { showEditTotalSentDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Total Amount Sent"
-                            )
-                        }
-                        // ADD button to add a new amount
-                        IconButton(onClick = { showSentAmountDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Amount Sent",
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
         // --- BOTTOM SPACER FOR BREATHING ROOM ---
         Spacer(modifier = Modifier.height(80.dp))
     } // End of AnimatedColumn
@@ -212,27 +164,6 @@ fun GoalScreen(
             onSave = { title, price, amountNeeded ->
                 onUpdateGoal(title, price, amountNeeded)
                 showGoalEditDialog = false
-            }
-        )
-    }
-    if (showEditTotalSentDialog) {
-        EditTotalSentDialog(
-            initialAmount = totalSentToIndia,
-            currencySymbol = currencySymbol,
-            onDismiss = { showEditTotalSentDialog = false },
-            onSave = { newTotal ->
-                onSetTotalSent(newTotal) // Call the overwrite handler
-                showEditTotalSentDialog = false
-            }
-        )
-    }
-    if (showSentAmountDialog) {
-        AddAmountSentDialog(
-            currencySymbol = currencySymbol,
-            onDismiss = { showSentAmountDialog = false },
-            onAdd = { amount ->
-                onAddToTotalSent(amount)
-                showSentAmountDialog = false
             }
         )
     }

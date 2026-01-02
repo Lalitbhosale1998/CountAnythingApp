@@ -20,10 +20,12 @@ import com.lalit.countanything.ui.screens.WelcomeScreen
 import com.lalit.countanything.ui.theme.CountAnyThingTheme
 import kotlinx.coroutines.launch
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import com.lalit.countanything.ui.viewmodels.MainViewModel
 
-import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executor
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +40,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         val settingsManager = SettingsManager(this)
         setContent {
             val theme by settingsManager.theme.collectAsState(initial = Theme.SYSTEM)
@@ -94,6 +97,7 @@ class MainActivity : AppCompatActivity() {
                         .setTitle(getString(R.string.unlock_title))
                         .setSubtitle(getString(R.string.unlock_subtitle))
                         .setNegativeButtonText(getString(R.string.cancel))
+                        .setAllowedAuthenticators(BIOMETRIC_STRONG or BIOMETRIC_WEAK)
                         .build()
 
                     biometricPrompt.authenticate(promptInfo)

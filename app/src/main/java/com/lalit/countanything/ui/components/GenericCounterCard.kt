@@ -11,6 +11,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,10 +26,14 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,8 +56,7 @@ fun GenericCounterCard(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .springyTouch(),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(28.dp)
         // You can add colors here to distinguish from main cards if desired
         // colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -110,15 +114,10 @@ fun GenericCounterCard(
                     )
                 }
             ) { count ->
-                val text = if (counter.type == CounterType.CURRENCY) {
-                    "$currencySymbol${"%,d".format(count)}"
-                } else {
-                    "$count"
-                }
                 Text(
-                    text = text,
+                    text = "%.0f".format(count),
                     style = MaterialTheme.typography.displayLarge,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    textAlign = TextAlign.Center
                 )
             }
 
@@ -129,28 +128,26 @@ fun GenericCounterCard(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                BouncyButton(
-                    onClick = {
-                        onDecrement()
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    },
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(Icons.Default.Remove, "Remove")
-                }
+                PulseButton(
+                    onClick = onDecrement,
+                    icon = Icons.Default.Remove,
+                    contentDescription = "Remove",
+                    pulseColor = Color(0xFF00E676), // Green (Good action!)
+                    modifier = Modifier.size(64.dp)
+                )
 
                 Spacer(modifier = Modifier.width(32.dp))
 
-                BouncyButton(
-                    onClick = {
-                        onIncrement()
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    },
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(Icons.Default.Add, "Add")
-                }
+                PulseButton(
+                    onClick = onIncrement,
+                    icon = Icons.Default.Add,
+                    contentDescription = "Add",
+                    pulseColor = Color(0xFFFF5252), // Red (Bad action!)
+                    modifier = Modifier.size(64.dp)
+                )
             }
+
+
         }
     }
 }

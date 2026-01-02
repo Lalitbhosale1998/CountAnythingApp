@@ -16,13 +16,10 @@ enum class Currency(val symbol: String) {
     YEN("¥"), DOLLAR("$"), EURO("€"), RUPEE("₹")
 }
 
-
 class SettingsManager(context: Context) {
 
     // Use the application context to avoid memory leaks
     private val appContext = context.applicationContext
-
-
 
     // Flow to observe theme changes
     val theme: Flow<Theme> = appContext.dataStore.data.map { preferences ->
@@ -47,7 +44,6 @@ class SettingsManager(context: Context) {
         }
     }
 
-
     // Use appContext here instead of context
     val welcomeShown: Flow<Boolean> = appContext.dataStore.data
         .map { preferences ->
@@ -59,14 +55,6 @@ class SettingsManager(context: Context) {
         appContext.dataStore.edit { settings ->
             settings[WELCOME_SHOWN_KEY] = true
         }
-    }
-
-    companion object {
-        val THEME_KEY = stringPreferencesKey("theme_preference")
-        val CURRENCY_KEY = stringPreferencesKey("currency_preference")
-        private val WELCOME_SHOWN_KEY = booleanPreferencesKey("welcome_shown")
-        private val APP_LOCK_KEY = booleanPreferencesKey("app_lock_enabled")
-        private val PRIVACY_MODE_KEY = booleanPreferencesKey("privacy_mode_enabled")
     }
 
     // App Lock Preference
@@ -90,6 +78,40 @@ class SettingsManager(context: Context) {
     suspend fun setPrivacyModeEnabled(enabled: Boolean) {
         appContext.dataStore.edit { settings ->
             settings[PRIVACY_MODE_KEY] = enabled
+        }
+    }
+
+    // User Name Preference
+    val userName: Flow<String> = appContext.dataStore.data
+        .map { preferences ->
+            preferences[USER_NAME_KEY] ?: ""
+        }
+
+    suspend fun setUserName(name: String) {
+        appContext.dataStore.edit { settings ->
+            settings[USER_NAME_KEY] = name
+        }
+    }
+
+    companion object {
+        val THEME_KEY = stringPreferencesKey("theme_preference")
+        val CURRENCY_KEY = stringPreferencesKey("currency_preference")
+        private val WELCOME_SHOWN_KEY = booleanPreferencesKey("welcome_shown")
+        private val APP_LOCK_KEY = booleanPreferencesKey("app_lock_enabled")
+        private val PRIVACY_MODE_KEY = booleanPreferencesKey("privacy_mode_enabled")
+        private val USER_NAME_KEY = stringPreferencesKey("user_name")
+        private val DAILY_REMINDER_KEY = booleanPreferencesKey("daily_reminder_enabled")
+    }
+
+    // Daily Reminder Preference
+    val isDailyReminderEnabled: Flow<Boolean> = appContext.dataStore.data
+        .map { preferences ->
+            preferences[DAILY_REMINDER_KEY] ?: false
+        }
+
+    suspend fun setDailyReminderEnabled(enabled: Boolean) {
+        appContext.dataStore.edit { settings ->
+            settings[DAILY_REMINDER_KEY] = enabled
         }
     }
 }

@@ -1,8 +1,12 @@
 package com.lalit.countanything.ui.models
 
 enum class Screen {
-    Counter,
-    History,
+    Habits,
+    Finance,
     Goal,
+    Study,
+    Events,
+    Tools,
+    History,
     Settings
 }

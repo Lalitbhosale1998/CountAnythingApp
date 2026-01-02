@@ -5,15 +5,19 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import com.lalit.countanything.R
+
 // Replace the default Typography with our custom expressive set
 val Typography = Typography(
     // For the big counter number: e.g., "42"
     displayLarge = TextStyle(
         fontFamily = Poppins,
-        fontWeight = FontWeight.ExtraBold, // Very bold for impact
-        fontSize = 72.sp, // A bit larger for more presence
-        lineHeight = 76.sp,
-        letterSpacing = (-0.25).sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 72.sp, // Large and prominent
+        lineHeight = 80.sp,
+        letterSpacing = 0.sp
     ),
     // For titles like "Cigarettes Smoked Today"
     headlineSmall = TextStyle(
@@ -49,8 +53,8 @@ val Typography = Typography(
     ),
     // For button text and navigation labels
     labelLarge = TextStyle(
-        fontFamily = Montserrat,
-        fontWeight = FontWeight.Medium,
+        fontFamily = Poppins,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp

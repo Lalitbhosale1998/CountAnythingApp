@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,13 +59,17 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.lalit.countanything.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
-fun CigaretteHistoryCalendar(
+fun HabitHistoryCalendar(
     modifier: Modifier = Modifier,
-    history: Map<String, Int>,
+    title: String,
+    history: Map<String, Float>,
     selectedDate: LocalDate,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    aura: androidx.compose.ui.graphics.Brush? = null
 ) {
     var currentMonth by remember { mutableStateOf(YearMonth.from(selectedDate)) }
     val historyDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault())
@@ -90,22 +95,33 @@ fun CigaretteHistoryCalendar(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = if (aura != null) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            CalendarHeader(
-                yearMonth = currentMonth,
-                onPreviousMonth = { currentMonth = currentMonth.minusMonths(1) },
-                onNextMonth = { currentMonth = currentMonth.plusMonths(1) }
-            )
+        Box(modifier = Modifier.fillMaxWidth().then(if (aura != null) Modifier.background(aura) else Modifier)) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (aura != null) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    textAlign = TextAlign.Center
+                )
+                CalendarHeader(
+                    yearMonth = currentMonth,
+                    onPreviousMonth = { currentMonth = currentMonth.minusMonths(1) },
+                    onNextMonth = { currentMonth = currentMonth.plusMonths(1) },
+                    isAuraActive = aura != null
+                )
             Spacer(modifier = Modifier.height(16.dp))
-            DaysOfWeekHeader()
-            Spacer(modifier = Modifier.height(8.dp))
+            DaysOfWeekHeader(isAuraActive = aura != null)
+            Spacer(modifier = Modifier.height(12.dp))
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.height((6 * 48).dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.height((6 * 52).dp)
             ) {
                 items(calendarDays) { day ->
                     when (day) {
@@ -120,6 +136,7 @@ fun CigaretteHistoryCalendar(
                                 day = day.day,
                                 count = count,
                                 isSelected = date == selectedDate,
+                                isAuraActive = aura != null,
                                 modifier = Modifier.clickable {
                                     if (!date.isAfter(LocalDate.now())) {
                                         onDateSelected(date)
@@ -133,12 +150,14 @@ fun CigaretteHistoryCalendar(
         }
     }
 }
+}
 
 @Composable
 fun CalendarHeader(
     yearMonth: YearMonth,
     onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit
+    onNextMonth: () -> Unit,
+    isAuraActive: Boolean = false
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -146,21 +165,30 @@ fun CalendarHeader(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = onPreviousMonth) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month")
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
+                contentDescription = "Previous Month",
+                tint = if (isAuraActive) Color.White else MaterialTheme.colorScheme.onSurface
+            )
         }
         Text(
             text = yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.ExtraBold,
+            color = if (isAuraActive) Color.White else MaterialTheme.colorScheme.onSurface
         )
         IconButton(onClick = onNextMonth) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Month")
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight, 
+                contentDescription = "Next Month",
+                tint = if (isAuraActive) Color.White else MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
 
 @Composable
-fun DaysOfWeekHeader() {
+fun DaysOfWeekHeader(isAuraActive: Boolean = false) {
     Row(modifier = Modifier.fillMaxWidth()) {
         val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
         days.forEach { day ->
@@ -169,7 +197,8 @@ fun DaysOfWeekHeader() {
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.ExtraBold,
+                color = if (isAuraActive) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -178,8 +207,9 @@ fun DaysOfWeekHeader() {
 @Composable
 fun DayCell(
     day: Int,
-    count: Int?,
+    count: Float?,
     isSelected: Boolean,
+    isAuraActive: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val hasCount = count != null && count > 0
@@ -188,7 +218,7 @@ fun DayCell(
 
     // Animate the corner radius for the squircle effect.
     val cornerRadius by animateFloatAsState(
-        targetValue = if (isSelected) 12f else 50f,
+        targetValue = if (isSelected) 14f else 50f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "SquircleCornerRadius"
     )
@@ -196,8 +226,11 @@ fun DayCell(
     // Animate the background color for selection, counts, or default state.
     val backgroundColor by animateColorAsState(
         targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.primary
-            hasCount -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+            isSelected && !isAuraActive -> MaterialTheme.colorScheme.primary
+            isSelected && isAuraActive -> Color.White.copy(alpha = 0.9f)
+            hasCount && isAuraActive -> Color.White.copy(alpha = 0.25f)
+            hasCount && !isAuraActive -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+            isAuraActive -> Color.White.copy(alpha = 0.1f)
             else -> Color.Transparent
         },
         animationSpec = tween(300),
@@ -207,8 +240,10 @@ fun DayCell(
     // Animate the main text color for better contrast against the changing background.
     val textColor by animateColorAsState(
         targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.onPrimary
-            hasCount -> MaterialTheme.colorScheme.onPrimaryContainer
+            isSelected && !isAuraActive -> MaterialTheme.colorScheme.onPrimary
+            isSelected && isAuraActive -> Color.Black
+            isAuraActive -> Color.White
+            hasCount && !isAuraActive -> MaterialTheme.colorScheme.onPrimaryContainer
             else -> MaterialTheme.colorScheme.onSurface
         },
         animationSpec = tween(300),
@@ -217,11 +252,15 @@ fun DayCell(
 
     // Animate the count text color for better contrast.
     val countColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+        targetValue = when {
+            isSelected && !isAuraActive -> MaterialTheme.colorScheme.onPrimary
+            isSelected && isAuraActive -> Color.Black.copy(alpha = 0.7f)
+            isAuraActive -> Color.White.copy(alpha = 0.9f)
+            else -> MaterialTheme.colorScheme.primary
+        },
         animationSpec = tween(300),
         label = "DayCellCountColor"
     )
-
 
     // --- CELL UI ---
 
@@ -239,18 +278,16 @@ fun DayCell(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = day.toString(),
-                fontSize = 14.sp,
-                fontWeight = if (hasCount || isSelected) FontWeight.Bold else FontWeight.Normal,
-                // Use the animated text color.
+                fontSize = 15.sp,
+                fontWeight = if (hasCount || isSelected) FontWeight.ExtraBold else FontWeight.Bold,
                 color = textColor
             )
             if (hasCount) {
                 Text(
-                    text = count.toString(),
-                    fontSize = 10.sp,
-                    // Use the animated color for the count text.
+                    text = "%.0f".format(count),
+                    fontSize = 11.sp,
                     color = countColor,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black
                 )
             }
         }

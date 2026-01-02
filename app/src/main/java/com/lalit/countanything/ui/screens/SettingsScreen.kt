@@ -4,60 +4,43 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
+import android.Manifest
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.lalit.countanything.Currency
+import com.lalit.countanything.NotificationScheduler
+import com.lalit.countanything.R
 import com.lalit.countanything.SettingsManager
 import com.lalit.countanything.StorageHelper
 import com.lalit.countanything.Theme
-import kotlinx.coroutines.launch
-import androidx.compose.material3.Switch
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.GridView
-import com.lalit.countanything.R
-import androidx.compose.ui.res.stringResource
 import com.lalit.countanything.ui.components.AnimatedColumn
 import com.lalit.countanything.ui.components.AnimatedItem
 import com.lalit.countanything.ui.components.springyTouch
-import com.lalit.countanything.Currency
-import androidx.compose.material.icons.filled.BarChart
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,13 +51,14 @@ fun SettingsScreen(
     val theme by settingsManager.theme.collectAsState(initial = Theme.SYSTEM)
     val isAppLockEnabled by settingsManager.isAppLockEnabled.collectAsState(initial = false)
     val isPrivacyModeEnabled by settingsManager.isPrivacyModeEnabled.collectAsState(initial = false)
+    val isDailyReminderEnabled by settingsManager.isDailyReminderEnabled.collectAsState(initial = false)
     val selectedCurrency by settingsManager.currency.collectAsState(initial = Currency.YEN)
+
     
     val themes = Theme.values()
     val supportedLanguages = listOf("en" to "English", "ja" to "日本語")
-    val context = LocalContext.current // Get the context for Toasts
-    // --- INSERT THIS CODE SNIPPET ---
-    // Launcher for EXPORT: Asks the user where to save a new file.
+    val context = LocalContext.current
+
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
         onResult = { uri ->
@@ -95,7 +79,6 @@ fun SettingsScreen(
         }
     )
 
-    // Launcher for IMPORT: Asks the user to pick an existing file.
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
@@ -117,71 +100,158 @@ fun SettingsScreen(
             }
         }
     )
-    // --- END OF SNIPPET ---
 
-    AnimatedColumn(
+    // Notification Permission Launcher
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                scope.launch {
+                    settingsManager.setDailyReminderEnabled(true)
+                    NotificationScheduler.scheduleDailyReminder(context)
+                }
+            } else {
+                Toast.makeText(context, "Notifications won't be sent without permission", Toast.LENGTH_SHORT).show()
+                scope.launch { settingsManager.setDailyReminderEnabled(false) } // Revert toggle
+            }
+        }
+    )
+
+    fun onDailyReminderToggle(enabled: Boolean) {
+        if (enabled) {
+            // Check for permission on Android 13+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val permission = Manifest.permission.POST_NOTIFICATIONS
+                if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+                     scope.launch {
+                        settingsManager.setDailyReminderEnabled(true)
+                        NotificationScheduler.scheduleDailyReminder(context)
+                     }
+                } else {
+                    notificationPermissionLauncher.launch(permission)
+                }
+            } else {
+                // Pre-Android 13, no runtime permission needed
+                scope.launch {
+                    settingsManager.setDailyReminderEnabled(true)
+                    NotificationScheduler.scheduleDailyReminder(context)
+                }
+            }
+        } else {
+            scope.launch {
+                settingsManager.setDailyReminderEnabled(false)
+                NotificationScheduler.cancelDailyReminder(context)
+            }
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
-        AnimatedItem(index = 0) {
-            // --- THEME SETTINGS CARD ---
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .springyTouch(),
-                shape = RoundedCornerShape(28.dp)
+        // --- HEADER SECTION ---
+
+
+        AnimatedColumn(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp) // Increased spacing for bubbles
+        ) {
+            Spacer(modifier = Modifier.statusBarsPadding().height(2.dp))
+
+            // --- APPEARANCE GROUP (Deep Purple) ---
+            SettingsGroup(
+                title = "Appearance",
+                icon = Icons.Default.Palette,
+                containerColor = Color(0xFF5E35B1),
+                contentColor = Color.White
             ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Theme Setting
+                SettingsRow(
+                    label = stringResource(R.string.theme),
+                    icon = Icons.Default.AutoAwesome
                 ) {
-                    Text(
-                        text = stringResource(R.string.theme),
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         themes.forEachIndexed { index, item ->
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(index = index, count = themes.size),
-                                onClick = {
-                                    scope.launch { settingsManager.setTheme(item) }
-                                },
-                                selected = theme == item
+                                onClick = { scope.launch { settingsManager.setTheme(item) } },
+                                selected = theme == item,
+                                colors = SegmentedButtonDefaults.colors(
+                                    activeContainerColor = Color.White,
+                                    activeContentColor = Color(0xFF5E35B1),
+                                    inactiveContainerColor = Color.White.copy(alpha = 0.2f),
+                                    inactiveContentColor = Color.White
+                                )
                             ) {
-                                Text(item.name.lowercase().replaceFirstChar { it.uppercase() })
+                                Text(item.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
                 }
-            }
-        }
-        AnimatedItem(index = 1) {
-            // --- NEW: LANGUAGE SETTINGS CARD ---
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .springyTouch(),
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.language),
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
 
+                // Currency Setting
+                SettingsRow(
+                    label = "Currency",
+                    icon = Icons.Default.AccountBalanceWallet
+                ) {
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        space = 4.dp
+                    ) {
+                        Currency.values().forEachIndexed { index, curr ->
+                            SegmentedButton(
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = Currency.values().size),
+                                onClick = { scope.launch { settingsManager.setCurrency(curr) } },
+                                selected = selectedCurrency == curr,
+                                label = { Text(text = curr.symbol, fontWeight = FontWeight.Bold) },
+                                colors = SegmentedButtonDefaults.colors(
+                                    activeContainerColor = Color.White,
+                                    activeContentColor = Color(0xFF5E35B1),
+                                    inactiveContainerColor = Color.White.copy(alpha = 0.2f),
+                                    inactiveContentColor = Color.White
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+
+
+            // --- NOTIFICATIONS GROUP (Orange) ---
+            SettingsGroup(
+                title = stringResource(R.string.notifications),
+                icon = Icons.Default.Notifications,
+                containerColor = Color(0xFFF57C00),
+                contentColor = Color.White
+            ) {
+                SettingsToggleRow(
+                    label = stringResource(R.string.daily_reminder_title),
+                    icon = Icons.Default.NotificationsActive,
+                    checked = isDailyReminderEnabled,
+                    onCheckedChange = { onDailyReminderToggle(it) }
+                )
+                 Text(
+                    text = stringResource(R.string.daily_reminder_subtitle),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(start = 40.dp, top = 4.dp) // Indent to align with text
+                )
+            }
+
+            // --- LOCALIZATION GROUP (Vibrant Blue) ---
+            SettingsGroup(
+                title = "Localization",
+                icon = Icons.Default.Translate,
+                containerColor = Color(0xFF1E88E5),
+                contentColor = Color.White
+            ) {
+                SettingsRow(
+                    label = stringResource(R.string.language),
+                    icon = Icons.Default.Translate
+                ) {
                     val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
                     val currentLang = if (currentLocale.isEmpty()) "en" else currentLocale
 
@@ -190,206 +260,268 @@ fun SettingsScreen(
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(index = index, count = supportedLanguages.size),
                                 onClick = {
-                                    // Set the new app locale
                                     val appLocale = LocaleListCompat.forLanguageTags(langCode)
                                     AppCompatDelegate.setApplicationLocales(appLocale)
                                 },
-                                selected = currentLang.startsWith(langCode)
+                                selected = currentLang.startsWith(langCode),
+                                colors = SegmentedButtonDefaults.colors(
+                                    activeContainerColor = Color.White,
+                                    activeContentColor = Color(0xFF1E88E5),
+                                    inactiveContainerColor = Color.White.copy(alpha = 0.2f),
+                                    inactiveContentColor = Color.White
+                                )
                             ) {
-                                Text(langName)
+                                Text(langName, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
                 }
             }
-        }
-        AnimatedItem(index = 2) {
-            // --- NEW: SECURITY SETTINGS CARD ---
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .springyTouch(),
-                shape = RoundedCornerShape(28.dp)
+
+            // --- SECURITY GROUP (Vibrant Pink) ---
+            SettingsGroup(
+                title = "Security",
+                icon = Icons.Default.Lock,
+                containerColor = Color(0xFFD81B60),
+                contentColor = Color.White
             ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.security),
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, contentDescription = null)
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(text = stringResource(R.string.app_lock))
-                        }
-                        Switch(
-                            checked = isAppLockEnabled,
-                            onCheckedChange = { enabled ->
-                                scope.launch { settingsManager.setAppLockEnabled(enabled) }
-                            }
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.VisibilityOff, contentDescription = null)
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(text = "Privacy Mode (Finance)")
-                        }
-                        Switch(
-                            checked = isPrivacyModeEnabled,
-                            onCheckedChange = { enabled ->
-                                scope.launch { settingsManager.setPrivacyModeEnabled(enabled) }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-
-        AnimatedItem(index = 3) {
-            // --- NEW: CURRENCY SETTINGS CARD ---
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .springyTouch(),
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Currency",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        space = 8.dp
-                    ) {
-                        Currency.values().forEachIndexed { index, curr ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = Currency.values().size),
-                                onClick = {
-                                    scope.launch { settingsManager.setCurrency(curr) }
-                                },
-                                selected = selectedCurrency == curr,
-                                label = {
-                                    Text(
-                                        text = curr.symbol,
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // --- NEW: STYLED DATA MANAGEMENT SECTION ---
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
-            // --- Define the colors from your design ---
-            val peachColor = Color(0xFFFDE4D6) // A light peachy color for the card backgrounds
-            val brownColor = Color(0xFF6F4E37) // A coffee-brown color for text and icons
-
-            // Header label matching Counter tab style
-            Text(
-                text = stringResource(R.string.data_management),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Two cards for Export and Import
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // A common set of colors for both cards
-                val cardColors = CardDefaults.cardColors(
-                    containerColor = peachColor,
-                    contentColor = brownColor
+                // App Lock Toggle
+                SettingsToggleRow(
+                    label = stringResource(R.string.app_lock),
+                    icon = Icons.Default.Lock,
+                    checked = isAppLockEnabled,
+                    onCheckedChange = { scope.launch { settingsManager.setAppLockEnabled(it) } }
                 )
 
-                // EXPORT CARD
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .springyTouch()
-                        .clickable { exportLauncher.launch("MyLog_Backup.json") },
-                    shape = RoundedCornerShape(24.dp),
+                // Privacy Mode Toggle
+                SettingsToggleRow(
+                    label = "Privacy Mode",
+                    icon = Icons.Default.VisibilityOff,
+                    checked = isPrivacyModeEnabled,
+                    onCheckedChange = { scope.launch { settingsManager.setPrivacyModeEnabled(it) } }
+                )
+            }
 
-                    ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth() // Ensure column takes full width of the card
-                            .padding(vertical = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FileUpload,
-                            contentDescription = "Export Data",
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(stringResource(R.string.export_data), fontWeight = FontWeight.SemiBold)
-                    }
-                }
-
-                // IMPORT CARD
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .springyTouch()
-                        .clickable { importLauncher.launch("application/json") },
-                    shape = RoundedCornerShape(24.dp),
-
-                    ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth() // Ensure column takes full width of the card
-                            .padding(vertical = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FileDownload,
-                            contentDescription = "Import Data",
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(stringResource(R.string.import_data), fontWeight = FontWeight.SemiBold)
-                    }
+            // --- DATA MANAGEMENT GROUP (Teal) ---
+            SettingsGroup(
+                title = "Data Management",
+                icon = Icons.Default.GridView,
+                containerColor = Color(0xFF00897B),
+                contentColor = Color.White
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DataActionCard(
+                        label = stringResource(R.string.export_data),
+                        icon = Icons.Default.FileUpload,
+                        modifier = Modifier.weight(1f),
+                        onClick = { exportLauncher.launch("CountAnything_Backup.json") },
+                         // Pass content color to ensure card adapts to the teal background
+                        containerColor = Color.White.copy(alpha = 0.2f),
+                        contentColor = Color.White
+                    )
+                    DataActionCard(
+                        label = stringResource(R.string.import_data),
+                        icon = Icons.Default.FileDownload,
+                        modifier = Modifier.weight(1f),
+                        onClick = { importLauncher.launch("application/json") },
+                        containerColor = Color.White.copy(alpha = 0.2f),
+                        contentColor = Color.White
+                    )
                 }
             }
-        }
 
-        // --- BOTTOM SPACER FOR BREATHING ROOM ---
-        Spacer(modifier = Modifier.height(80.dp))
+            // --- ABOUT SECTION (Blue Gray) ---
+            SettingsGroup(
+                title = "About",
+                icon = Icons.Default.Info,
+                containerColor = Color(0xFF455A64),
+                contentColor = Color.White
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "CountAnything v1.0.0",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Made with ❤️ for productivity",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+
+@Composable
+fun SettingsGroup(
+    title: String,
+    icon: ImageVector,
+    containerColor: Color,
+    contentColor: Color,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(32.dp), // Bubble shape
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Flat and bold
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp), // Increased padding
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Expressive Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = contentColor.copy(alpha = 0.9f),
+                    modifier = Modifier.size(32.dp) // Larger Icon
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall, // Bold Title
+                    fontWeight = FontWeight.Black,
+                    color = contentColor
+                )
+            }
+            
+            // Content
+            CompositionLocalProvider(LocalContentColor provides contentColor) {
+               content()
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsRow(
+    label: String,
+    icon: ImageVector,
+    action: @Composable (() -> Unit)? = null
+) {
+    val contentColor = LocalContentColor.current
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = contentColor.copy(alpha = 0.8f) // Use local content color
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium, // Slightly larger text
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor // Use local content color
+            )
+        }
+        if (action != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            action()
+        }
+    }
+}
+
+@Composable
+fun SettingsToggleRow(
+    label: String,
+    icon: ImageVector,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    val contentColor = LocalContentColor.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = contentColor.copy(alpha = 0.8f)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = contentColor, // Match thumb to content (White)
+                checkedTrackColor = Color.Black.copy(alpha = 0.3f), // Darker track for contrast
+                uncheckedThumbColor = contentColor.copy(alpha = 0.6f),
+                uncheckedTrackColor = Color.Black.copy(alpha = 0.1f)
+            )
+        )
+    }
+}
+
+@Composable
+fun DataActionCard(
+    label: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer
+) {
+    Card(
+        modifier = modifier
+            .springyTouch()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(32.dp),
+                tint = contentColor
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor
+            )
+        }
     }
 }
