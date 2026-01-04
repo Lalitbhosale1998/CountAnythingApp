@@ -75,11 +75,19 @@ fun StudyDashboard(
     val totalLearned = learnedKanji.size + learnedVocab.size + learnedGrammar.size
     val progress = if (totalItems > 0) totalLearned.toFloat() / totalItems else 0f
 
+    // Calculate top padding to include status bars
+    val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 24.dp
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
-        contentPadding = PaddingValues(24.dp),
+        contentPadding = PaddingValues(
+            top = topPadding,
+            bottom = 24.dp,
+            start = 24.dp,
+            end = 24.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // --- Header Section ---
@@ -294,10 +302,10 @@ fun PremiumLevelCard(
                 // Decorative circles or pattern could go here
                 Text(
                     text = title.take(2), // "JL" or "N2"
-                    fontSize = 120.sp,
+                    fontSize = 100.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White.copy(alpha = 0.1f),
-                    modifier = Modifier.align(Alignment.BottomEnd).offset(x = 10.dp, y = 30.dp)
+                    modifier = Modifier.align(Alignment.BottomEnd).offset(x = 20.dp, y = 20.dp)
                 )
                 
                 Column(modifier = Modifier.padding(20.dp)) {

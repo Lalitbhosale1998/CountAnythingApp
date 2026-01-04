@@ -30,7 +30,7 @@ import kotlin.math.sin
 fun WavyProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
-    waveColor: Color = MaterialTheme.colorScheme.primary,
+    color: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant
 ) {
     // This state will be used to animate the wave's phase, making it move
@@ -65,7 +65,7 @@ fun WavyProgressBar(
             
             drawPath(
                 path = wavePath,
-                color = waveColor,
+                color = color,
                 style = Stroke(
                     width = strokeWidth,
                     cap = StrokeCap.Round,

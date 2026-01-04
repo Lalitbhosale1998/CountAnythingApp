@@ -39,7 +39,17 @@ object StorageHelper {
     private val GOAL_AMOUNT_NEEDED = floatPreferencesKey("goal_amount_needed")
     // NEW: Events Key
     private val EVENTS = stringPreferencesKey("events_list")
+    
+    // NEW: Vault Key
+    private val VAULT_ENTRIES = stringPreferencesKey("vault_entries")
+    
     private val GARBAGE_SCHEDULE = stringPreferencesKey("garbage_schedule")
+
+    // --- Vault Entry Data Class ---
+    data class VaultEntry(
+        val id: String,
+        val secretText: String
+    )
 
     // --- Formatters ---
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -343,7 +353,9 @@ object StorageHelper {
             if (json.has("goal_price")) prefs[GOAL_PRICE] = json.getDouble("goal_price").toFloat()
             if (json.has("goal_amount_needed")) prefs[GOAL_AMOUNT_NEEDED] = json.getDouble("goal_amount_needed").toFloat()
             if (json.has("total_sent_to_india")) prefs[TOTAL_SENT_TO_INDIA] = json.getDouble("total_sent_to_india").toFloat()
+            if (json.has("total_sent_to_india")) prefs[TOTAL_SENT_TO_INDIA] = json.getDouble("total_sent_to_india").toFloat()
             if (json.has("events_list")) prefs[EVENTS] = json.getString("events_list")
+            if (json.has("vault_entries")) prefs[VAULT_ENTRIES] = json.getString("vault_entries")
         }
     }
 
@@ -414,4 +426,33 @@ object StorageHelper {
         }
         return schedule
     }
+
+    // --- Vault Functions ---
+
+    suspend fun saveVaultEntries(context: Context, entries: List<VaultEntry>) {
+        val jsonArray = JSONArray()
+        entries.forEach { entry ->
+            val obj = JSONObject()
+            obj.put("id", entry.id)
+            obj.put("secretText", entry.secretText)
+            jsonArray.put(obj)
+        }
+        context.dataStore.edit { settings ->
+            settings[VAULT_ENTRIES] = jsonArray.toString()
+        }
+    }
+
+    suspend fun loadVaultEntries(context: Context): List<VaultEntry> {
+        val jsonString = context.dataStore.data.first()[VAULT_ENTRIES] ?: "[]"
+        val jsonArray = JSONArray(jsonString)
+        val entries = mutableListOf<VaultEntry>()
+        for (i in 0 until jsonArray.length()) {
+            val obj = jsonArray.getJSONObject(i)
+            val id = obj.getString("id")
+            val text = obj.getString("secretText")
+            entries.add(VaultEntry(id, text))
+        }
+        return entries
+    }
+
 }

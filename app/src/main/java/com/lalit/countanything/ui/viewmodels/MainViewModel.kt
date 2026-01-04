@@ -150,6 +150,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _sexualHealthCount.value = StorageHelper.loadSexualHealthForDate(context, _displayedDate.value)
             
             _events.value = StorageHelper.loadEvents(context)
+            _vaultEntries.value = StorageHelper.loadVaultEntries(context)
         }
     }
 
@@ -397,6 +398,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun saveEvents() {
         viewModelScope.launch {
             StorageHelper.saveEvents(context, _events.value)
+        }
+    }
+    // --- Actions: Vault ---
+
+    private val _vaultEntries = MutableStateFlow<List<StorageHelper.VaultEntry>>(emptyList())
+    val vaultEntries: StateFlow<List<StorageHelper.VaultEntry>> = _vaultEntries.asStateFlow()
+
+    fun addVaultEntry(text: String) {
+        val newEntry = StorageHelper.VaultEntry(
+            id = java.util.UUID.randomUUID().toString(),
+            secretText = text
+        )
+        _vaultEntries.update { it + newEntry }
+        saveVaultEntries()
+    }
+
+    fun updateVaultEntry(id: String, newText: String) {
+        _vaultEntries.update { list ->
+            list.map { if (it.id == id) it.copy(secretText = newText) else it }
+        }
+        saveVaultEntries()
+    }
+
+    fun deleteVaultEntry(id: String) {
+        _vaultEntries.update { list -> list.filter { it.id != id } }
+        saveVaultEntries()
+    }
+
+    private fun saveVaultEntries() {
+        viewModelScope.launch {
+            StorageHelper.saveVaultEntries(context, _vaultEntries.value)
         }
     }
 }

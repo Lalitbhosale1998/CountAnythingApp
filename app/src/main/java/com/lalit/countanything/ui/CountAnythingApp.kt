@@ -3,6 +3,7 @@ package com.lalit.countanything.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -51,6 +52,7 @@ import com.lalit.countanything.ui.screens.HiddenVaultScreen
 import com.lalit.countanything.ui.screens.ManYenVisualizerScreen
 import com.lalit.countanything.ui.screens.MorseCodeScreen
 import com.lalit.countanything.ui.screens.NengoConverterScreen
+import com.lalit.countanything.ui.screens.ShrineGuideScreen
 import com.lalit.countanything.ui.screens.ToolsScreen
 import com.lalit.countanything.ui.screens.SpeedDashboardScreen
 import com.lalit.countanything.ui.viewmodels.MainViewModel
@@ -91,6 +93,15 @@ fun CountAnythingApp(
     val events by viewModel.events.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val isPrivacyModeEnabled by settingsManager.isPrivacyModeEnabled.collectAsState(initial = false)
+    val currentTheme by settingsManager.theme.collectAsState(initial = com.lalit.countanything.Theme.SYSTEM)
+    val isSystemDark = isSystemInDarkTheme()
+    
+    val appTheme = when (currentTheme) {
+        com.lalit.countanything.Theme.LIGHT -> false
+        com.lalit.countanything.Theme.DARK -> true
+        com.lalit.countanything.Theme.SYSTEM -> isSystemDark
+    }
+
     val today = LocalDate.now()
     val counterTitle = when (displayedDate) {
         today -> stringResource(R.string.counter_cigarettes_today)
@@ -113,7 +124,10 @@ fun CountAnythingApp(
         }
     }
 
-    MaterialTheme {
+    com.lalit.countanything.ui.theme.CountAnyThingTheme(
+        darkTheme = appTheme,
+        dynamicColor = true
+    ) {
         Scaffold(
             bottomBar = {
                 BottomNavigationBar(
@@ -187,7 +201,8 @@ fun CountAnythingApp(
                                 selectedDate = displayedDate,
                                 onPreviousDay = { viewModel.previousDay() },
                                 onNextDay = { viewModel.nextDay() },
-                                onResetToToday = { viewModel.resetToToday() }
+                                onResetToToday = { viewModel.resetToToday() },
+                                isDarkTheme = appTheme // Explicitly passing true theme state
                             )
                         }
                         Screen.Finance -> {
@@ -296,6 +311,13 @@ fun CountAnythingApp(
                                         onBack = { selectedTool = null }
                                     )
                                     "hidden_vault" -> HiddenVaultScreen(
+                                        onBack = { selectedTool = null },
+                                        vaultEntries = viewModel.vaultEntries.collectAsState().value,
+                                        onAddEntry = { viewModel.addVaultEntry(it) },
+                                        onUpdateEntry = { id, text -> viewModel.updateVaultEntry(id, text) },
+                                        onDeleteEntry = { viewModel.deleteVaultEntry(it) }
+                                    )
+                                    "shrine_guide" -> ShrineGuideScreen(
                                         onBack = { selectedTool = null }
                                     )
                                     else -> Box(Modifier.fillMaxSize()) // Placeholder

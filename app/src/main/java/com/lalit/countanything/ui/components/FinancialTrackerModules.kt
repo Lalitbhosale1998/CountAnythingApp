@@ -27,11 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lalit.countanything.R
 import java.time.LocalDate
 import java.time.YearMonth
@@ -42,55 +44,134 @@ import java.time.temporal.ChronoUnit
 fun FinanceHeader(
     totalSavings: Float,
     currencySymbol: String,
-    privacyModeEnabled: Boolean
+    privacyModeEnabled: Boolean,
+    displayedMonth: YearMonth,
+    onMonthChange: (YearMonth) -> Unit,
+    onAdd: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp)
-            .clip(RoundedCornerShape(bottomStart = 42.dp, bottomEnd = 42.dp))
+            .padding(16.dp)
+            .height(200.dp)
+            .clip(RoundedCornerShape(32.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFFFFAB40), // Vibrant Amber
-                        Color(0xFF9C27B0)  // Deep Purple
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFFFD700), // Gold
+                        Color(0xFFFF8C00), // Dark Orange
+                        Color(0xFFFF0080)  // Fuschia
                     )
                 )
-            ),
-        contentAlignment = Alignment.Center
+            )
     ) {
+        // Shine effect
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                color = Color.White.copy(alpha = 0.1f),
+                radius = size.width,
+                center = androidx.compose.ui.geometry.Offset(size.width, 0f)
+            )
+        }
 
         Column(
-            modifier = Modifier.statusBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "Total Monthly Savings",
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 1f),
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SensitiveText(
-                text = "$currencySymbol${"%,.0f".format(totalSavings)}",
-                style = MaterialTheme.typography.displayMedium.copy(
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                ),
-                privacyModeEnabled = privacyModeEnabled
-            )
+            // Header Row: Month Nav + Add Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                // Month Navigation
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { onMonthChange(displayedMonth.minusMonths(1)) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = "Previous Month",
+                            tint = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                    
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = stringResource(R.string.finance_total_monthly_savings).uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                letterSpacing = 0.5.sp, 
+                                fontSize = 8.sp, 
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                        Text(
+                            text = displayedMonth.format(DateTimeFormatter.ofPattern("MMM yyyy")).uppercase(),
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onMonthChange(displayedMonth.plusMonths(1)) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Next Month",
+                            tint = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+                
+                SqueezeButton(
+                    onClick = onAdd,
+                    icon = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.cd_add),
+                    color = Color.White.copy(alpha = 0.2f),
+                    iconColor = Color.White,
+                    modifier = Modifier.size(40.dp),
+                    iconSize = 20.dp
+                )
+            }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            // Amount Display (Centered/Prominent now that Top is busy?) 
+            // Actually keeping it left aligned below is fine, but lets give it space
             
-            // Mini Sparkline placeholder
-            FinancialSparkline(
-                data = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.8f, 1f), // Dummy trend
-                modifier = Modifier
-                    .width(120.dp)
-                    .height(30.dp),
-                color = Color.White.copy(alpha = 0.5f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                SensitiveText(
+                    text = "$currencySymbol${"%,.0f".format(totalSavings)}",
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    ),
+                    privacyModeEnabled = privacyModeEnabled
+                )
+                
+                 // Sparkline Container (Smaller now to fit layout)
+                Box(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(50.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    FinancialSparkline(
+                        data = listOf(0.4f, 0.6f, 0.3f, 0.8f, 0.7f, 1f),
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color.White
+                    )
+                }
+            }
         }
     }
 }
@@ -141,82 +222,130 @@ fun CountdownModule(
     Card(
         modifier = Modifier.fillMaxWidth().springyTouch(),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Event,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = title, 
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (onDelete != null) {
-                    IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
-                    }
-                } else {
-                    Spacer(modifier = Modifier.width(20.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            AnimatedContent(targetState = daysRemaining, label = "CountdownAnim") { days ->
-                Text(
-                    text = days?.toString() ?: "??",
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        brush = Brush.verticalGradient(
-                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF2C3E50),
+                            Color(0xFF4CA1AF)
                         )
                     )
                 )
-            }
-            Text(
-                "Days Left",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            val progress = remember(targetDate, daysRemaining) {
-                if (targetDate == null || daysRemaining == null) 0f
-                else {
-                    val totalDays = 30f
-                    ((totalDays - daysRemaining.coerceAtMost(30)) / totalDays).coerceIn(0f, 1f)
+                .padding(24.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Event,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = title, 
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    if (onDelete != null) {
+                        IconButton(onClick = onDelete) {
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete), tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+                        }
+                    }
                 }
-            }
-            WavyProgressBar(progress = progress, modifier = Modifier.padding(horizontal = 8.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-            PulseButton(
-                onClick = onEditDate,
-                icon = Icons.Default.EditCalendar,
-                contentDescription = "Edit",
-                pulseColor = Color(0xFF2196F3),
-                modifier = Modifier.size(60.dp),
-                iconSize = 24
-            )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Hero Number
+                // Hero Number with Circular Progress
+                Box(contentAlignment = Alignment.Center) {
+                    val progress = remember(targetDate, daysRemaining) {
+                        if (targetDate == null || daysRemaining == null) 0f
+                        else {
+                            val totalDays = 30f
+                            ((totalDays - daysRemaining.coerceAtMost(30)) / totalDays).coerceIn(0f, 1f)
+                        }
+                    }
+                    
+                    // Track
+                    WavyCircularProgressIndicator(
+                        progress = 1f,
+                        modifier = Modifier.size(200.dp),
+                        color = Color.White.copy(alpha = 0.1f),
+                        trackColor = Color.Transparent,
+                        strokeWidth = 35.dp.value, 
+                        amplitude = 4.dp.value
+                    )
+                    
+                    // Progress
+                    WavyCircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.size(200.dp),
+                        color = Color(0xFF00E676), // Neon Green
+                        trackColor = Color.Transparent,
+                        strokeWidth = 35.dp.value,
+                        amplitude = 4.dp.value
+                    )
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        AnimatedContent(targetState = daysRemaining, label = "CountdownAnim") { days ->
+                            Text(
+                                text = days?.toString() ?: "??",
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 64.sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.3f),
+                                        blurRadius = 12f
+                                    )
+                                ),
+                                color = Color.White
+                            )
+                        }
+                        Text(
+                            stringResource(R.string.finance_days_left_label).uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 2.sp),
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+
+                
+                SqueezeButton(
+                    onClick = onEditDate,
+                    icon = Icons.Default.EditCalendar,
+                    contentDescription = stringResource(R.string.cd_edit),
+                    color = Color.White.copy(alpha = 0.2f),
+                    iconColor = Color.White,
+                    modifier = Modifier.size(56.dp),
+                    iconSize = 24.dp
+                )
+            }
         }
     }
 }
@@ -242,130 +371,156 @@ fun BudgetHubModule(
 
     Card(
         modifier = Modifier.fillMaxWidth().springyTouch(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-        )
+        shape = RoundedCornerShape(40.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { onMonthChange(displayedMonth.minusMonths(1)) }) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, null, modifier = Modifier.size(24.dp))
-                }
-                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF134E5E), // Deep Teal
+                            Color(0xFF71B280)  // Minty Green
+                        )
                     )
-                    Text(
-                        text = displayedMonth.format(monthFormatter),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                IconButton(onClick = { onMonthChange(displayedMonth.plusMonths(1)) }) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, modifier = Modifier.size(24.dp))
-                }
-            }
-            
-            if (!isCurrentMonth) {
-                Surface(
-                    onClick = onResetMonth,
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(
-                        text = "Go to Today",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxSize(),
-                        strokeWidth = 8.dp,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "${(progress * 100).toInt()}%",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Black
+                )
+                .padding(24.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Month Nav
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { onMonthChange(displayedMonth.minusMonths(1)) }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                         Text(
+                            text = title.uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
+                            color = Color.White.copy(alpha = 0.7f)
                         )
                         Text(
-                            "Saved",
+                            text = displayedMonth.format(monthFormatter),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+                    IconButton(onClick = { onMonthChange(displayedMonth.plusMonths(1)) }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    }
+                }
+                
+                if (!isCurrentMonth) {
+                    Surface(
+                        onClick = onResetMonth,
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.2f),
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.finance_go_to_today),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
                 }
-                Column(modifier = Modifier.padding(start = 16.dp)) {
-                    FinancialMetricRow(
-                        label = "Salary",
-                        value = "$currencySymbol${"%,.0f".format(salary)}",
-                        color = MaterialTheme.colorScheme.primary,
-                        privacyModeEnabled = privacyModeEnabled
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    FinancialMetricRow(
-                        label = "Savings",
-                        value = "$currencySymbol${"%,.0f".format(savings)}",
-                        color = Color(0xFF4CAF50),
-                        privacyModeEnabled = privacyModeEnabled
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    FinancialMetricRow(
-                        label = "Spent",
-                        value = "$currencySymbol${"%,.0f".format(spent)}",
-                        color = MaterialTheme.colorScheme.error,
-                        privacyModeEnabled = privacyModeEnabled
-                    )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Gauge & Stats
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Gauge
+                    Box(modifier = Modifier.size(140.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            progress = { 1f },
+                            modifier = Modifier.fillMaxSize(),
+                            strokeWidth = 12.dp,
+                            trackColor = Color.Black.copy(alpha = 0.2f),
+                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                        )
+                        CircularProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier.fillMaxSize(),
+                            strokeWidth = 12.dp,
+                            color = Color(0xFFC0FF00), // Lime Neon
+                            trackColor = Color.Transparent,
+                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "${(progress * 100).toInt()}%",
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                            Text(
+                                "SAVED",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(24.dp))
+
+                    // Metrics
+                    Column(modifier = Modifier.weight(1f)) {
+                        FinancialMetricRow(
+                            label = stringResource(R.string.finance_salary_label),
+                            value = "$currencySymbol${"%,.0f".format(salary)}",
+                            color = Color.White,
+                            privacyModeEnabled = privacyModeEnabled
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        FinancialMetricRow(
+                            label = stringResource(R.string.finance_savings_label),
+                            value = "$currencySymbol${"%,.0f".format(savings)}",
+                            color = Color(0xFFC0FF00),
+                            privacyModeEnabled = privacyModeEnabled
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        FinancialMetricRow(
+                            label = stringResource(R.string.finance_spent_label),
+                            value = "$currencySymbol${"%,.0f".format(spent)}",
+                            color = Color(0xFFFF5252),
+                            privacyModeEnabled = privacyModeEnabled
+                        )
+                    }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                PulseButton(
-                    onClick = onEdit,
-                    icon = Icons.Default.Edit,
-                    contentDescription = "Edit",
-                    pulseColor = Color(0xFF2196F3),
-                    modifier = Modifier.size(60.dp)
-                )
                 
-                if (onDelete != null) {
-                    Spacer(modifier = Modifier.width(32.dp))
-                    PulseButton(
-                        onClick = onDelete,
-                        icon = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        pulseColor = Color(0xFFFF5252),
-                        modifier = Modifier.size(60.dp)
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                // Controls
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SqueezeButton(
+                        onClick = onEdit,
+                        icon = Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.cd_edit),
+                        color = Color.White.copy(alpha = 0.2f),
+                        iconColor = Color.White,
+                        modifier = Modifier.size(56.dp)
                     )
+                    
+                    if (onDelete != null) {
+                        Spacer(modifier = Modifier.width(32.dp))
+                        SqueezeButton(
+                            onClick = onDelete,
+                            icon = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            color = Color(0xFFFF5252).copy(alpha = 0.2f),
+                            iconColor = Color(0xFFFF5252),
+                            modifier = Modifier.size(56.dp)
+                        )
+                    }
                 }
             }
         }
@@ -379,17 +534,18 @@ fun FinancialMetricRow(
     color: Color,
     privacyModeEnabled: Boolean
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
-        Spacer(Modifier.width(8.dp))
-        Column {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            SensitiveText(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                privacyModeEnabled = privacyModeEnabled
-            )
-        }
+    Column {
+        Text(
+            label.uppercase(), 
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), 
+            color = Color.White.copy(alpha = 0.6f)
+        )
+        SensitiveText(
+            text = value,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = color,
+            privacyModeEnabled = privacyModeEnabled
+        )
     }
 }
 
@@ -420,27 +576,31 @@ fun CumulativeTotalModule(
     Card(
         modifier = Modifier.fillMaxWidth().springyTouch().clickable { onAddAmount() },
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier.background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFF654ea3), // Ultra Voilet
+                        Color(0xFFeaafc8)  // Premium Pink
+                    )
+                )
+            )
+        ) {
+            // Pulse Effect
             if (pulseProgress.value > -1.2f && pulseProgress.value < 1.2f) {
-                val flagColors = listOf(
+                 val flagColors = listOf(
                     Color.Transparent,
-                    Color(0xFFFF9933).copy(alpha = 0.4f),
-                    Color.White.copy(alpha = 0.6f),
-                    Color(0xFF138808).copy(alpha = 0.4f),
+                    Color(0xFFFF9933).copy(alpha = 0.6f),
+                    Color.White.copy(alpha = 0.8f),
+                    Color(0xFF138808).copy(alpha = 0.6f),
                     Color.Transparent
                 )
                 Canvas(modifier = Modifier.matchParentSize()) {
                     val width = size.width
                     val xPos = pulseProgress.value * width
-                    val gradientWidth = width * 0.7f 
+                    val gradientWidth = width * 0.8f 
                     
                     drawRect(
                         brush = Brush.horizontalGradient(
@@ -453,55 +613,82 @@ fun CumulativeTotalModule(
             }
 
             Row(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
+                modifier = Modifier.padding(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.AccountBalance,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp).padding(end = 16.dp)
-                )
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                         Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.AccountBalance,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = title.uppercase(), 
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.5.sp), 
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    
                     SensitiveText(
                         text = "$currencySymbol${"%,.0f".format(total)}",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Black,
-                            brush = Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontWeight = FontWeight.Black
                         ),
+                        color = Color.White,
                         privacyModeEnabled = privacyModeEnabled
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    PulseButton(
-                        onClick = onEditTotal,
-                        icon = Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        pulseColor = Color(0xFF2196F3),
-                        modifier = Modifier.size(56.dp)
-                    )
-                    
-                    if (onDelete != null) {
-                        Spacer(modifier = Modifier.width(16.dp))
-                        PulseButton(
-                            onClick = onDelete,
-                            icon = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            pulseColor = Color(0xFFFF5252),
-                            modifier = Modifier.size(56.dp)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.width(16.dp))
-                    PulseButton(
+                
+                // Actions
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                     SqueezeButton(
                         onClick = onAddAmount,
                         icon = Icons.Default.AddCircle,
-                        contentDescription = "Add",
-                        pulseColor = Color(0xFF00E676),
-                        modifier = Modifier.size(64.dp),
-                        iconSize = 32
+                        contentDescription = stringResource(R.string.cd_add),
+                        color = Color.White,
+                        iconColor = Color(0xFF654ea3),
+                        modifier = Modifier.size(56.dp),
+                        iconSize = 28.dp
                     )
+                    
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                         SqueezeButton(
+                            onClick = onEditTotal,
+                            icon = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.cd_edit),
+                            color = Color.White.copy(alpha = 0.2f),
+                            iconColor = Color.White,
+                            modifier = Modifier.size(40.dp),
+                            iconSize = 18.dp
+                        )
+                        if (onDelete != null) {
+                            SqueezeButton(
+                                onClick = onDelete,
+                                icon = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                color = Color(0xFFFF5252).copy(alpha = 0.2f),
+                                iconColor = Color(0xFFFF5252),
+                                modifier = Modifier.size(40.dp),
+                                iconSize = 18.dp
+                            )
+                        }
+                    }
                 }
             }
         }

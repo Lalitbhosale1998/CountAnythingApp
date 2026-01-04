@@ -3,7 +3,14 @@ package com.lalit.countanything.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,11 +26,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lalit.countanything.R
 import com.lalit.countanything.ui.components.*
 import com.lalit.countanything.ui.models.Counter
@@ -47,151 +57,223 @@ fun HabitsScreen(
     selectedDate: java.time.LocalDate,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
-    onResetToToday: () -> Unit
+    onResetToToday: () -> Unit,
+    isDarkTheme: Boolean = isSystemInDarkTheme() // Added parameter with default
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        // --- CIGARETTE COUNTER CARD ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+    // Separate counters by type
+    val standardCounters = genericCounters.filter { it.type == CounterType.STANDARD }
+    val sexualHealthCounters = genericCounters.filter { it.type == CounterType.SEXUAL_HEALTH }
+    
+    // Select background and text colors based on theme
+    val ScreenContent = @Composable {
+        Scaffold(
+            containerColor = Color.Transparent, 
+            contentColor = if(isDarkTheme) Color.White else Color.Black 
+        ) { padding ->
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Fixed(2),
+                contentPadding = PaddingValues(
+                    top = 16.dp + padding.calculateTopPadding(),
+                    start = 16.dp, 
+                    end = 16.dp, 
+                    bottom = 80.dp + padding.calculateBottomPadding() + 16.dp
+                ),
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalItemSpacing = 16.dp
             ) {
-                Text(
-                    text = counterTitle,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                // --- HEADER SECTION (Full Width) ---
+                item(span = StaggeredGridItemSpan.FullLine) {
+                     Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                        Text(
+                            text = "Your Habits",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.ExtraBold
+                            ),
+                            color = if(isDarkTheme) Color.White else MaterialTheme.colorScheme.onBackground
+                        )
+                         Text(
+                            text = "Tracking your daily progress",
+                            style = MaterialTheme.typography.bodyLarge,
+                            // Dynamic secondary color
+                            color = if(isDarkTheme) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                     }
+                }
+    
+                // --- HERO MAIN COUNTER (Full Width) ---
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    HeroLiquidCard(
+                        title = counterTitle,
+                        count = cigaretteCount,
+                        onAdd = onAddOne,
+                        onSubtract = onSubtractOne,
+                        onReset = onReset
+                    )
+                }
+    
+                // --- SEXUAL HEALTH TRACKER (Full Width for now) ---
+                item(span = StaggeredGridItemSpan.FullLine) {
+                     SexualHealthTrackerCard(
+                        counter = fixedSexualHealthCounter,
+                        onIncrement = onIncrementSexualHealth,
+                        onDecrement = onDecrementSexualHealth,
+                        onDelete = null, 
+                        selectedDate = selectedDate
+                    )
+                }
                 
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // RESTORED: Smooth Number Animation
-                AnimatedContent(
-                    targetState = cigaretteCount,
-                    label = "CigaretteCountAnimation",
-                    transitionSpec = {
-                        if (targetState > initialState) {
-                            slideInVertically { height -> height } + fadeIn() togetherWith
-                                    slideOutVertically { height -> -height } + fadeOut()
-                        } else {
-                            slideInVertically { height -> -height } + fadeIn() togetherWith
-                                    slideOutVertically { height -> height } + fadeOut()
-                        }.using(
-                            SizeTransform { _, _ ->
-                                spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow
-                                )
-                            }
+                 // --- DYNAMIC SEXUAL HEALTH TRACKERS ---
+                 items(sexualHealthCounters, key = { it.id }) { counter ->
+                     SexualHealthTrackerCard(
+                        counter = counter,
+                        onIncrement = { onUpdateCounter(counter.id, 1f) },
+                        onDecrement = { onUpdateCounter(counter.id, -1f) },
+                        onDelete = { onDeleteCounter(counter.id) },
+                        selectedDate = selectedDate
+                    )
+                }
+    
+                // --- SECTION TITLE ---
+                if (standardCounters.isNotEmpty()) {
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Text(
+                            text = "Quick Trackers",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            color = if(isDarkTheme) Color.White else MaterialTheme.colorScheme.onBackground
                         )
                     }
-                ) { count ->
-                    Text(
-                        text = "%.0f".format(count),
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        textAlign = TextAlign.Center
+                }
+    
+                // --- STANDARD COUNTERS (2 Columns) ---
+                items(standardCounters, key = { it.id }) { counter ->
+                     BubbleCounterCard(
+                        counter = counter,
+                        onIncrement = { onUpdateCounter(counter.id, 1f) },
+                        onDecrement = { onUpdateCounter(counter.id, -1f) },
+                        onDelete = { onDeleteCounter(counter.id) },
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+        }
+    }
 
-                Spacer(modifier = Modifier.height(24.dp))
+    if (isDarkTheme) {
+        GalacticNebulaBackground(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            ScreenContent()
+        }
+    } else {
+        DaylightSkyBackground(
+             modifier = Modifier.fillMaxSize()
+        ) {
+            ScreenContent()
+        }
+    }
+}
+
+@Composable
+fun HeroLiquidCard(
+    title: String,
+    count: Float,
+    onAdd: () -> Unit,
+    onSubtract: () -> Unit,
+    onReset: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(320.dp),
+        shape = RoundedCornerShape(48.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Liquid Background Effect
+            val progress = (count / 20f).coerceIn(0f, 1f)
+            
+             LiquidProgress(
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .align(Alignment.BottomCenter)
+                     .fillMaxHeight(0.3f + (progress * 0.7f)),
+                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+             )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                // Large Animated Number
+                AnimatedContent(
+                    targetState = count,
+                    transitionSpec = {
+                        fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
+                    },
+                    label = "HeroCount"
+                ) { targetCount ->
+                     Text(
+                        text = "%.0f".format(targetCount),
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontSize = 80.sp,
+                            fontWeight = FontWeight.Black
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface 
+                    )
+                }
 
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    PulseButton(
-                        onClick = onSubtractOne,
+                     SqueezeButton(
+                        onClick = onSubtract,
                         icon = Icons.Default.Remove,
-                        contentDescription = stringResource(R.string.subtract_one),
-                        pulseColor = Color(0xFF00E676), // Now Green (Good action!)
-                        modifier = Modifier.size(72.dp)
+                        color = MaterialTheme.colorScheme.background,
+                        iconColor = MaterialTheme.colorScheme.onBackground
                     )
 
-                    Spacer(modifier = Modifier.width(32.dp))
+                    // Big Add Button
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickable { onAdd() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
 
-                    PulseButton(
-                        onClick = onAddOne,
-                        icon = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_one),
-                        pulseColor = Color(0xFFFF5252), // Now Red (Bad habit!)
-                        modifier = Modifier.size(96.dp),
-                        iconSize = 40
-                    )
-
-                    Spacer(modifier = Modifier.width(32.dp))
-
-                    PulseButton(
+                     SqueezeButton(
                         onClick = onReset,
                         icon = Icons.Default.Refresh,
-                        contentDescription = stringResource(R.string.reset),
-                        pulseColor = Color(0xFFFFAB40), // More Vibrant Amber
-                        modifier = Modifier.size(72.dp)
+                        color = MaterialTheme.colorScheme.background,
+                        iconColor = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
         }
-
-        // --- HEALTH & VITALITY SECTION ---
-        val standardCounters = genericCounters.filter { it.type == CounterType.STANDARD }
-        val sexualHealthCounters = genericCounters.filter { it.type == CounterType.SEXUAL_HEALTH }
-
-        // Permanent Fixed Tracker
-        SexualHealthTrackerCard(
-            counter = fixedSexualHealthCounter,
-            onIncrement = onIncrementSexualHealth,
-            onDecrement = onDecrementSexualHealth,
-            onDelete = null, // Fixed tracker cannot be deleted
-            selectedDate = selectedDate
-        )
-
-        // Dynamic Custom Trackers
-        sexualHealthCounters.forEach { counter ->
-                SexualHealthTrackerCard(
-                    counter = counter,
-                    onIncrement = { onUpdateCounter(counter.id, 1f) },
-                    onDecrement = { onUpdateCounter(counter.id, -1f) },
-                    onDelete = { onDeleteCounter(counter.id) },
-                    selectedDate = selectedDate
-                )
-            }
-
-        if (standardCounters.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Trackers",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                textAlign = TextAlign.Start
-            )
-            standardCounters.forEach { counter ->
-                GenericCounterCard(
-                    counter = counter,
-                    currencySymbol = currencySymbol,
-                    onIncrement = { onUpdateCounter(counter.id, 1f) },
-                    onDecrement = { onUpdateCounter(counter.id, -1f) },
-                    onDelete = { onDeleteCounter(counter.id) }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(80.dp)) // Floating Tab Bar padding
     }
 }

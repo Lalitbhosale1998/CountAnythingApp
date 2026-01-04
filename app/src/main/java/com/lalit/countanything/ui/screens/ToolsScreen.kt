@@ -17,8 +17,10 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Highlight
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.TempleHindu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,11 +31,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lalit.countanything.ui.components.springyTouch
+import com.lalit.countanything.R
 
 data class ToolItem(
     val id: String,
@@ -52,44 +56,76 @@ fun ToolsScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     
-    val tools = listOf(
-        ToolItem(
-            id = "speed_dashboard",
-            title = "Speed Dashboard",
-            icon = Icons.Default.Speed,
-            description = "Real-time G-Force & GPS Speedometer",
-            color = Color(0xFF00E5FF) // Cyber Cyan
-        ),
-        ToolItem(
-            id = "coin_flip",
-            title = "Coin Flip",
-            icon = Icons.Default.MonetizationOn,
-            description = "Heads or Tails? Let fate decide.",
-            color = Color(0xFFFFD700) // Gold
-        ),
-        ToolItem(
-            id = "morse_code",
-            title = "Morse Transmitter",
-            icon = Icons.Default.Highlight,
-            description = "Broadcast messages using the flashlight.",
-            color = Color(0xFF4CAF50) // Signal Green
-        ),
-        ToolItem(
-            id = "nengo_converter",
-            title = "Nengo Converter",
-            icon = Icons.Default.CalendarMonth,
-            description = "Japanese Era <-> Western Year.",
-            color = Color(0xFFE91E63) // Pink/Red for Japan
-        ),
-        ToolItem(
-            id = "man_yen_visualizer",
-            title = "Man-Yen Visualizer",
-            icon = Icons.Default.MonetizationOn,
-            description = "Visualize Japanese currency stacks.",
-            color = Color(0xFFFFD700) // Gold
-        )
-
-    )
+    val tools = remember(isVaultVisible) {
+        buildList {
+            add(
+                ToolItem(
+                    id = "speed_dashboard",
+                    title = "Speed Dashboard", // Using string resources usually better, but keeping it simple for this dynamic block or needing context
+                    icon = Icons.Default.Speed,
+                    description = "Monitor velocity and movement",
+                    color = Color(0xFF00E5FF)
+                )
+            )
+            add(
+                ToolItem(
+                    id = "coin_flip",
+                    title = "Coin Flip",
+                    icon = Icons.Default.MonetizationOn,
+                    description = "Heads or Tails? Decide now",
+                    color = Color(0xFFFFD700)
+                )
+            )
+            add(
+                ToolItem(
+                    id = "morse_code",
+                    title = "Morse Code",
+                    icon = Icons.Default.Highlight,
+                    description = "Text to light/sound converter",
+                    color = Color(0xFF4CAF50)
+                )
+            )
+            add(
+                ToolItem(
+                    id = "nengo_converter",
+                    title = "Nengo Converter",
+                    icon = Icons.Default.CalendarMonth,
+                    description = "Japanese Era conversion",
+                    color = Color(0xFFE91E63)
+                )
+            )
+            add(
+                ToolItem(
+                    id = "man_yen_visualizer",
+                    title = "Man-Yen Visualizer",
+                    icon = Icons.Default.MonetizationOn,
+                    description = "Visualize Japanese currency stacks",
+                    color = Color(0xFFFFD700)
+                )
+            )
+            add(
+                ToolItem(
+                    id = "shrine_guide",
+                    title = "Shrine & Temple Guide",
+                    icon = Icons.Default.TempleHindu,
+                    description = "Interactive etiquette guide",
+                    color = Color(0xFFEF5350)
+                )
+            )
+            
+            if (isVaultVisible) {
+                add(
+                    ToolItem(
+                        id = "hidden_vault",
+                        title = "Hidden Vault",
+                        icon = Icons.Default.Lock,
+                        description = "Secure storage for private counters",
+                        color = Color(0xFF607D8B)
+                    )
+                )
+            }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -97,7 +133,7 @@ fun ToolsScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        "Tools & Utilities",
+                        stringResource(R.string.title_tools_utilities),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -123,7 +159,7 @@ fun ToolsScreen(
         ) {
             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                 Text(
-                    "Real-Time Sensors",
+                    stringResource(R.string.header_sensors),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,

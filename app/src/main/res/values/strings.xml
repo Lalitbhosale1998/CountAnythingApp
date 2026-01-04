@@ -2,15 +2,16 @@
     <string name="app_name" translatable="false">YOROZU</string>
 
     <!-- Navigation -->
-    <string name="nav_habits" translatable="false">Habits</string>
-    <string name="nav_finance" translatable="false">Finance</string>
-    <string name="nav_history" translatable="false">History</string>
-    <string name="nav_goal" translatable="false">Goal</string>
-    <string name="nav_settings" translatable="false">Settings</string>
-    <string name="nav_study" translatable="false">Study</string>
-    <string name="nav_events" translatable="false">Events</string>
-    <string name="nav_tools" translatable="false">Tools</string>
-    <string name="cigarette_history_log" translatable="false">Cigarette History Log</string>
+    <!-- Navigation -->
+    <string name="nav_habits">Habits</string>
+    <string name="nav_finance">Finance</string>
+    <string name="nav_history">History</string>
+    <string name="nav_goal">Goal</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_study">Study</string>
+    <string name="nav_events">Events</string>
+    <string name="nav_tools">Tools</string>
+    <string name="cigarette_history_log">Cigarette History Log</string>
 
     <!-- Welcome Screen -->
     <string name="welcome_get_started" translatable="false">Get Started</string>
@@ -62,6 +63,14 @@
     <string name="auth_required" translatable="false">Authentication required to access your data.</string>
     <string name="tap_to_unlock" translatable="false">Tap to Unlock</string>
 
+    <!-- Settings Titles -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_currency">Currency</string>
+    <string name="settings_localization">Localization</string>
+    <string name="settings_privacy_mode">Privacy Mode</string>
+    <string name="settings_about">About</string>
+    <string name="settings_made_with_love">Made with ❤️ for productivity</string>
+    <string name="settings_app_version">YOROZU v1.0.0</string>
 
     <!-- Notification -->
     <string name="notification_channel_name" translatable="false">Daily Reminder</string>
@@ -73,4 +82,94 @@
     <string name="notifications" translatable="false">Notifications</string>
     <string name="permission_required" translatable="false">Permission Required</string>
     <string name="notification_permission_rationale" translatable="false">Please allow notifications to receive your daily reminder.</string>
+
+    <!-- Tools Screen -->
+    <string name="title_tools_utilities">Tools &amp; Utilities</string>
+    <string name="header_sensors">Real-Time Sensors</string>
+    
+    <string name="tool_speed_dashboard">Speed Dashboard</string>
+    <string name="desc_speed_dashboard">Real-time G-Force &amp; GPS Speedometer</string>
+    
+    <string name="tool_coin_flip">Coin Flip</string>
+    <string name="desc_coin_flip">Heads or Tails? Let fate decide.</string>
+    
+    <string name="tool_morse">Morse Transmitter</string>
+    <string name="desc_morse">Broadcast messages using the flashlight.</string>
+    
+    <string name="tool_nengo">Nengo Converter</string>
+    <string name="desc_nengo">Japanese Era &lt;-&gt; Western Year.</string>
+    
+    <string name="tool_manyen">Man-Yen Visualizer</string>
+    <string name="desc_manyen">Visualize Japanese currency stacks.</string>
+    
+    <string name="tool_system_core">SYSTEM CORE</string>
+    <string name="desc_system_core">Encrypted Data Partition.</string>
+
+    <!-- Hidden Vault -->
+    <string name="vault_title">SECURE VAULT</string>
+    <string name="vault_subtitle">ENCRYPTED_DATA_STORE // V.2.0</string>
+    <string name="vault_new_entry">New Secure Entry</string>
+    <string name="vault_secret_text">Secret Text</string>
+    <string name="vault_encrypt_save">ENCRYPT &amp; SAVE</string>
+    <string name="vault_add_secret">Add Secret</string>
+    
+    <!-- Man-Yen Visualizer -->
+    <string name="manyen_amount_label">Amount (Yen)</string>
+    <string name="manyen_reading_jp">JAPANESE READING</string>
+    <string name="manyen_reading_in">INDIAN READING</string>
+    <string name="manyen_visualization">VISUALIZATION (Stacks of ¥1,000,000)</string>
+    <string name="manyen_enter_amount">Enter amount to visualize</string>
+    <string name="manyen_empty_state">Enter amount to visualize money stacks</string>
+
+    <!-- Morse Code -->
+    <string name="morse_title">Morse\nTransmitter</string>
+    <string name="morse_signal_preview">SIGNAL PREVIEW</string>
+    <string name="morse_waiting">Waiting for input...</string>
+    <string name="morse_placeholder">Type to encode...</string>
+    <string name="morse_transmit">Transmit</string>
+    <string name="morse_clear">Clear</string>
+
+    <!-- Sexual Health -->
+    <string name="sh_today">Today</string>
+    <string name="sh_weekly">Weekly</string>
+    <string name="sh_feedback_low_1">Regular activity can help reduce stress and improve mood.</string>
+    <string name="sh_feedback_low_2">Better sleep and lower blood pressure are linked to balanced sexual health.</string>
+    <string name="sh_feedback_low_3">It can boost your immune system and heart health.</string>
+    <string name="sh_feedback_low_4">Endorphins released can act as a natural pain reliever.</string>
+    <string name="sh_warning_high_1">Excessive frequency may lead to physical soreness or skin irritation.</string>
+    <string name="sh_warning_high_2">Watch out for signs of physical desensitization; moderation is key.</string>
+    <string name="sh_warning_high_3">If it interferes with daily life or sleep, consider a more balanced routine.</string>
+    <string name="sh_warning_high_4">Consult a doctor if you feel it\'s becoming a compulsive habit.</string>
+    <string name="sh_fact_normal_1">It\'s normal for libido to fluctuate based on stress, diet, or sleep.</string>
+    <string name="sh_fact_normal_2">Low frequency is perfectly healthy and varies from person to person.</string>
+    <string name="sh_fact_normal_3">Taking a break can sometimes reset physical sensitivity.</string>
+
+    <!-- Events -->
+    <string name="events_title">Upcoming Events</string>
+    <string name="events_empty_title">No Events Yet</string>
+    <string name="events_empty_body">Add birthdays, anniversaries,\nor any special moments!</string>
+    <string name="events_days_left_suffix">days left</string>
+    <string name="events_today_chip">TODAY!</string>
+    <string name="events_recurring_yearly">Yearly</string>
+    
+    <!-- Content Descriptions -->
+    <string name="cd_delete">Delete</string>
+    <string name="cd_add">Add</string>
+    <string name="cd_remove">Remove</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_recurring">Recurring</string>
+    <string name="cd_time">Time</string>
+
+    <!-- Finance -->
+    <string name="finance_primary_budget_title">Primary Budget</string>
+    <string name="finance_days_left_label">Days Left</string>
+    <string name="finance_total_monthly_savings">Total Monthly Savings</string>
+    <string name="finance_go_to_today">Go to Today</string>
+    <string name="finance_saved_label">Saved</string>
+    <string name="finance_salary_label">Salary</string>
+    <string name="finance_savings_label">Savings</string>
+    <string name="finance_spent_label">Spent</string>
+    
+    <!-- Generic -->
+    <string name="generic_delete_counter_desc">Delete Counter</string>
 </resources>

@@ -22,12 +22,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.DecimalFormat
+import com.lalit.countanything.R
 
 // Theme Colors
 private val BankGreen = Color(0xFF1B5E20)
@@ -58,10 +60,10 @@ fun ManYenVisualizerScreen(
         containerColor = Color(0xFF121212), // Dark Vault
         topBar = {
             TopAppBar(
-                title = { Text("Man-Yen Visualizer", color = Gold, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.tool_manyen), color = Gold, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = Gold)
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.cancel), tint = Gold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -81,7 +83,7 @@ fun ManYenVisualizerScreen(
             OutlinedTextField(
                 value = rawInput,
                 onValueChange = { if (it.all { c -> c.isDigit() } && it.length < 16) rawInput = it },
-                label = { Text("Amount (Yen)", color = Gold.copy(alpha = 0.7f)) },
+                label = { Text(stringResource(R.string.manyen_amount_label), color = Gold.copy(alpha = 0.7f)) },
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 32.sp,
@@ -111,7 +113,7 @@ fun ManYenVisualizerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "JAPANESE READING",
+                        text = stringResource(R.string.manyen_reading_jp),
                         style = MaterialTheme.typography.labelMedium,
                         color = Gold.copy(alpha = 0.8f),
                         letterSpacing = 2.sp
@@ -130,7 +132,7 @@ fun ManYenVisualizerScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "INDIAN READING",
+                        text = stringResource(R.string.manyen_reading_in),
                         style = MaterialTheme.typography.labelMedium,
                         color = Gold.copy(alpha = 0.8f),
                         letterSpacing = 2.sp
@@ -150,7 +152,7 @@ fun ManYenVisualizerScreen(
             
             // --- Visualization ---
             Text(
-                "VISUALIZATION (Stacks of ¥1,000,000)",
+                stringResource(R.string.manyen_visualization),
                 color = Color.Gray,
                 fontSize = 12.sp,
                 modifier = Modifier.align(Alignment.Start)
@@ -167,7 +169,7 @@ fun ManYenVisualizerScreen(
             ) {
                  if (manCount == 0L) {
                      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                         Text("Enter amount to visualize", color = Color.Gray)
+                         Text(stringResource(R.string.manyen_enter_amount), color = Color.Gray)
                      }
                  } else {
                      LazyVerticalGrid(

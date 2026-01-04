@@ -22,6 +22,7 @@ fun SensitiveText(
     text: String,
     modifier: Modifier = Modifier,
     style: TextStyle = TextStyle.Default,
+    color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified,
     privacyModeEnabled: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
@@ -40,6 +41,7 @@ fun SensitiveText(
         Text(
             text = if (isHidden) placeholder else text,
             style = style,
+            color = color,
             maxLines = maxLines,
             overflow = overflow
         )

@@ -162,7 +162,7 @@ fun SettingsScreen(
 
             // --- APPEARANCE GROUP (Deep Purple) ---
             SettingsGroup(
-                title = "Appearance",
+                title = stringResource(R.string.settings_appearance),
                 icon = Icons.Default.Palette,
                 containerColor = Color(0xFF5E35B1),
                 contentColor = Color.White
@@ -193,7 +193,7 @@ fun SettingsScreen(
 
                 // Currency Setting
                 SettingsRow(
-                    label = "Currency",
+                    label = stringResource(R.string.settings_currency),
                     icon = Icons.Default.AccountBalanceWallet
                 ) {
                     SingleChoiceSegmentedButtonRow(
@@ -243,7 +243,7 @@ fun SettingsScreen(
 
             // --- LOCALIZATION GROUP (Vibrant Blue) ---
             SettingsGroup(
-                title = "Localization",
+                title = stringResource(R.string.settings_localization),
                 icon = Icons.Default.Translate,
                 containerColor = Color(0xFF1E88E5),
                 contentColor = Color.White
@@ -280,7 +280,7 @@ fun SettingsScreen(
 
             // --- SECURITY GROUP (Vibrant Pink) ---
             SettingsGroup(
-                title = "Security",
+                title = stringResource(R.string.security),
                 icon = Icons.Default.Lock,
                 containerColor = Color(0xFFD81B60),
                 contentColor = Color.White
@@ -295,7 +295,7 @@ fun SettingsScreen(
 
                 // Privacy Mode Toggle
                 SettingsToggleRow(
-                    label = "Privacy Mode",
+                    label = stringResource(R.string.settings_privacy_mode),
                     icon = Icons.Default.VisibilityOff,
                     checked = isPrivacyModeEnabled,
                     onCheckedChange = { scope.launch { settingsManager.setPrivacyModeEnabled(it) } }
@@ -304,7 +304,7 @@ fun SettingsScreen(
 
             // --- DATA MANAGEMENT GROUP (Teal) ---
             SettingsGroup(
-                title = "Data Management",
+                title = stringResource(R.string.data_management),
                 icon = Icons.Default.GridView,
                 containerColor = Color(0xFF00897B),
                 contentColor = Color.White
@@ -335,7 +335,7 @@ fun SettingsScreen(
 
             // --- ABOUT SECTION (Blue Gray) ---
             SettingsGroup(
-                title = "About",
+                title = stringResource(R.string.settings_about),
                 icon = Icons.Default.Info,
                 containerColor = Color(0xFF455A64),
                 contentColor = Color.White
@@ -345,12 +345,12 @@ fun SettingsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "CountAnything v1.0.0",
+                        text = stringResource(R.string.settings_app_version),
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.White
                     )
                     Text(
-                        text = "Made with ❤️ for productivity",
+                        text = stringResource(R.string.settings_made_with_love),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.7f)
                     )

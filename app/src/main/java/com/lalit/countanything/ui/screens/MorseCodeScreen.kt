@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.lalit.countanything.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -146,14 +148,14 @@ fun MorseCodeScreen(
             LargeTopAppBar(
                 title = { 
                     Text(
-                        "Morse\nTransmitter", 
+                        stringResource(R.string.morse_title), 
                         fontWeight = FontWeight.ExtraBold,
                         lineHeight = 40.sp
                     ) 
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cancel))
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -231,7 +233,7 @@ fun MorseCodeScreen(
                     modifier = Modifier.padding(12.dp)
                 ) {
                     Text(
-                        "SIGNAL PREVIEW",
+                        stringResource(R.string.morse_signal_preview),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
@@ -246,7 +248,7 @@ fun MorseCodeScreen(
                         if (signals.isEmpty()) {
                             item {
                                 Text(
-                                    "Waiting for input...",
+                                    stringResource(R.string.morse_waiting),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 )
@@ -304,11 +306,11 @@ fun MorseCodeScreen(
                 value = text,
                 onValueChange = { if (!isTransmitting) text = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Type to encode...") },
+                placeholder = { Text(stringResource(R.string.morse_placeholder)) },
                 trailingIcon = {
                     if (text.isNotEmpty()) {
                         IconButton(onClick = { if(!isTransmitting) text = "" }) {
-                            Icon(Icons.Default.Clear, "Clear")
+                            Icon(Icons.Default.Clear, stringResource(R.string.morse_clear))
                         }
                     }
                 },
@@ -348,7 +350,7 @@ fun MorseCodeScreen(
                 ) {
                    Icon(
                        imageVector = if (isTransmitting) Icons.Default.Clear else Icons.Default.FlashOn,
-                       contentDescription = "Transmit",
+                       contentDescription = stringResource(R.string.morse_transmit),
                        modifier = Modifier.size(36.dp)
                    )
                 }

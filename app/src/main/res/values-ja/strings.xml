@@ -3,10 +3,14 @@
     <string name="app_name">マイログ</string>
 
     <!-- Navigation -->
-    <string name="nav_counter">カウンター</string>
+    <string name="nav_habits">習慣</string>
+    <string name="nav_finance">家計簿</string>
     <string name="nav_history">履歴</string>
     <string name="nav_goal">目標</string>
     <string name="nav_settings">設定</string>
+    <string name="nav_study">学習</string>
+    <string name="nav_events">イベント</string>
+    <string name="nav_tools">ツール</string>
 
     <!-- Welcome Screen -->
     <string name="welcome_get_started">始める</string>
@@ -57,4 +61,103 @@
     <string name="app_locked">アプリはロックされています</string>
     <string name="auth_required">データにアクセスするには認証が必要です</string>
     <string name="tap_to_unlock">タップしてロック解除</string>
+
+    <!-- Settings Titles -->
+    <string name="settings_appearance">外観</string>
+    <string name="settings_currency">通貨</string>
+    <string name="settings_localization">ローカリゼーション</string>
+    <string name="settings_privacy_mode">プライバシーモード</string>
+    <string name="settings_about">アプリについて</string>
+    <string name="settings_made_with_love">生産性のために ❤️ で作られました</string>
+    <string name="settings_app_version">YOROZU v1.0.0</string>
+
+    <!-- Tools Screen -->
+    <string name="title_tools_utilities">ツール・ユーティリティ</string>
+    <string name="header_sensors">リアルタイムセンサー</string>
+    
+    <string name="tool_speed_dashboard">スピードダッシュボード</string>
+    <string name="desc_speed_dashboard">リアルタイムGフォース＆GPS速度計</string>
+    
+    <string name="tool_coin_flip">コイントス</string>
+    <string name="desc_coin_flip">表か裏か？運命を委ねる。</string>
+    
+    <string name="tool_morse">モールス信号機</string>
+    <string name="desc_morse">フラッシュライトでメッセージを送信。</string>
+    
+    <string name="tool_nengo">年号変換</string>
+    <string name="desc_nengo">日本の年号 &lt;-&gt; 西暦</string>
+    
+    <string name="tool_manyen">万円ビジュアライザー</string>
+    <string name="desc_manyen">お金の山を視覚化します。</string>
+    
+    <string name="tool_system_core">システムコア</string>
+    <string name="desc_system_core">暗号化データパーティション</string>
+
+    <!-- Hidden Vault -->
+    <string name="vault_title">セキュア保管庫</string>
+    <string name="vault_subtitle">暗号化データストア // V.2.0</string>
+    <string name="vault_new_entry">新規シークレット入力</string>
+    <string name="vault_secret_text">秘密のテキスト</string>
+    <string name="vault_encrypt_save">暗号化して保存</string>
+    <string name="vault_add_secret">シークレットを追加</string>
+    
+    <!-- Man-Yen Visualizer -->
+    <string name="manyen_amount_label">金額 (円)</string>
+    <string name="manyen_reading_jp">日本語読み</string>
+    <string name="manyen_reading_in">インド読み (Lakh/Crore)</string>
+    <string name="manyen_visualization">視覚化 (100万円の山)</string>
+    <string name="manyen_enter_amount">金額を入力して視覚化</string>
+    <string name="manyen_empty_state">金額を入力してお金の山を表示</string>
+
+    <!-- Morse Code -->
+    <string name="morse_title">モールス\n信号機</string>
+    <string name="morse_signal_preview">信号プレビュー</string>
+    <string name="morse_waiting">入力待ち...</string>
+    <string name="morse_placeholder">入力してエンコード...</string>
+    <string name="morse_transmit">送信</string>
+    <string name="morse_clear">クリア</string>
+
+    <!-- Sexual Health -->
+    <string name="sh_today">今日</string>
+    <string name="sh_weekly">週間</string>
+    <string name="sh_feedback_low_1">定期的な活動はストレスを軽減し、気分を改善するのに役立ちます。</string>
+    <string name="sh_feedback_low_2">より良い睡眠と血圧の低下は、バランスの取れた性的健康に関連しています。</string>
+    <string name="sh_feedback_low_3">免疫システムと心臓の健康を高めることができます。</string>
+    <string name="sh_feedback_low_4">放出されるエンドルフィンは、天然の鎮痛剤として作用します。</string>
+    <string name="sh_warning_high_1">過度の頻度は、身体的な痛みや皮膚の炎症を引き起こす可能性があります。</string>
+    <string name="sh_warning_high_2">身体的な不感症の兆候に注意してください。適度が重要です。</string>
+    <string name="sh_warning_high_3">日常生活や睡眠に支障をきたす場合は、よりバランスの取れたルーチンを検討してください。</string>
+    <string name="sh_warning_high_4">強迫的な習慣になりつつあると感じる場合は、医師に相談してください。</string>
+    <string name="sh_fact_normal_1">ストレス、食事、睡眠によってリビドーが変動するのは正常です。</string>
+    <string name="sh_fact_normal_2">頻度が低いことは完全に健康的であり、人によって異なります。</string>
+    <string name="sh_fact_normal_3">休憩を取ることで、身体的な感度をリセットできる場合があります。</string>
+
+    <!-- Events -->
+    <string name="events_title">予定されているイベント</string>
+    <string name="events_empty_title">イベントはまだありません</string>
+    <string name="events_empty_body">誕生日、記念日、\nまたは特別な瞬間を追加しましょう！</string>
+    <string name="events_days_left_suffix">日残り</string>
+    <string name="events_today_chip">今日！</string>
+    <string name="events_recurring_yearly">毎年</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_delete">削除</string>
+    <string name="cd_add">追加</string>
+    <string name="cd_remove">減らす</string>
+    <string name="cd_edit">編集</string>
+    <string name="cd_recurring">繰り返し</string>
+    <string name="cd_time">時間</string>
+
+    <!-- Finance -->
+    <string name="finance_primary_budget_title">メイン予算</string>
+    <string name="finance_days_left_label">残り日数</string>
+    <string name="finance_total_monthly_savings">月間総貯蓄額</string>
+    <string name="finance_go_to_today">今日へ移動</string>
+    <string name="finance_saved_label">貯蓄済み</string>
+    <string name="finance_salary_label">給料</string>
+    <string name="finance_savings_label">貯蓄</string>
+    <string name="finance_spent_label">支出</string>
+
+    <!-- Generic -->
+    <string name="generic_delete_counter_desc">カウンターを削除</string>
 </resources>

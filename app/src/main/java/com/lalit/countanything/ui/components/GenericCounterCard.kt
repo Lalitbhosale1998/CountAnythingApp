@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.lalit.countanything.ui.models.Counter
@@ -86,7 +87,7 @@ fun GenericCounterCard(
                 IconButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Counter",
+                        contentDescription = stringResource(com.lalit.countanything.R.string.generic_delete_counter_desc),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -131,7 +132,7 @@ fun GenericCounterCard(
                 PulseButton(
                     onClick = onDecrement,
                     icon = Icons.Default.Remove,
-                    contentDescription = "Remove",
+                    contentDescription = stringResource(com.lalit.countanything.R.string.cd_remove),
                     pulseColor = Color(0xFF00E676), // Green (Good action!)
                     modifier = Modifier.size(64.dp)
                 )
@@ -141,7 +142,7 @@ fun GenericCounterCard(
                 PulseButton(
                     onClick = onIncrement,
                     icon = Icons.Default.Add,
-                    contentDescription = "Add",
+                    contentDescription = stringResource(com.lalit.countanything.R.string.cd_add),
                     pulseColor = Color(0xFFFF5252), // Red (Bad action!)
                     modifier = Modifier.size(64.dp)
                 )

@@ -37,6 +37,8 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.stringResource
+import com.lalit.countanything.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -60,10 +62,11 @@ fun EventsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .padding(16.dp)
     ) {
         Text(
-            text = "Upcoming Events",
+            text = stringResource(R.string.events_title),
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -110,7 +113,7 @@ fun RollingNumber(
     }
     
     Text(
-        text = "${count.value.toLong()} days left",
+        text = "${count.value.toLong()} ${stringResource(R.string.events_days_left_suffix)}",
         style = style,
         color = color,
         modifier = modifier
@@ -153,7 +156,7 @@ fun SwipeableEventCard(
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.cd_delete),
                     tint = Color.White
                 )
             }
@@ -247,13 +250,13 @@ fun EventCard(
                             if (item.event.isRecurring) {
                                 Icon(
                                     Icons.Default.Repeat,
-                                    contentDescription = "Recurring",
+                                    contentDescription = stringResource(R.string.cd_recurring),
                                     modifier = Modifier.size(14.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Yearly",
+                                    text = stringResource(R.string.events_recurring_yearly),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -263,7 +266,7 @@ fun EventCard(
                             item.event.time?.let { time ->
                                 Icon(
                                     Icons.Outlined.Timer,
-                                    contentDescription = "Time",
+                                    contentDescription = stringResource(R.string.cd_time),
                                     modifier = Modifier.size(14.dp),
                                     tint = MaterialTheme.colorScheme.secondary
                                 )
@@ -279,7 +282,7 @@ fun EventCard(
                         // Days Remaining Chip
                         if (item.daysRemaining == 0L) {
                              Text(
-                                text = "TODAY!",
+                                text = stringResource(R.string.events_today_chip),
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -296,7 +299,7 @@ fun EventCard(
                     IconButton(onClick = { onDelete(item.event.id) }) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.cd_delete),
                             tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
                         )
                     }
@@ -363,7 +366,7 @@ fun EmptyEventsState() {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "No Events Yet",
+            text = stringResource(R.string.events_empty_title),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -371,7 +374,7 @@ fun EmptyEventsState() {
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Add birthdays, anniversaries,\nor any special moments!",
+            text = stringResource(R.string.events_empty_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center

@@ -3,6 +3,7 @@ package com.lalit.countanything.ui.screens
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -96,21 +99,30 @@ fun FinanceScreen(
         .sum()
     val combinedSavings = currentSavings + totalSavingsFromHubs
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Immersive gradient background or simple spacer can go here if needed, 
-        // but for now, we just remove the header as requested.
-        
-        AnimatedColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // --- 1. SALARY COUNTDOWN (Now as a dedicated card) ---
+    AnimatedColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp) // Added horizontal padding
+            .padding(bottom = 100.dp), // Extra padding for bottom
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+            // --- 0. FINANCE HEADER (Summary) ---
             AnimatedItem(index = 0) {
+                FinanceHeader(
+                    totalSavings = combinedSavings,
+                    currencySymbol = currencySymbol,
+                    privacyModeEnabled = isPrivacyModeEnabled,
+                    displayedMonth = displayedMonth,
+                    onMonthChange = { displayedMonth = it },
+                    onAdd = { showEditDialog = true }
+                )
+            }
+
+            // --- 1. SALARY COUNTDOWN ---
+            AnimatedItem(index = 1) {
                 CountdownModule(
                     title = stringResource(R.string.days_until_salary),
                     targetDate = salaryDay,
@@ -119,9 +131,9 @@ fun FinanceScreen(
             }
 
             // --- 2. PRIMARY FINANCIAL HUB ---
-            AnimatedItem(index = 1) {
+            AnimatedItem(index = 2) {
                 BudgetHubModule(
-                    title = "Primary Budget",
+                    title = stringResource(R.string.finance_primary_budget_title),
                     displayedMonth = displayedMonth,
                     onMonthChange = { displayedMonth = it },
                     salary = currentSalary,
@@ -134,7 +146,7 @@ fun FinanceScreen(
             }
 
             // --- 3. INDIA REMITTANCE ---
-            AnimatedItem(index = 2) {
+            AnimatedItem(index = 3) {
                 CumulativeTotalModule(
                     title = stringResource(R.string.money_sent_to_india),
                     total = totalSentToIndia,
@@ -148,7 +160,7 @@ fun FinanceScreen(
 
             // --- CUSTOM FINANCIAL TRACKERS ---
             genericCounters.filter { it.type != CounterType.STANDARD }.forEachIndexed { index, counter ->
-                AnimatedItem(index = index + 3) {
+                AnimatedItem(index = index + 4) {
                     when (counter.type) {
                         CounterType.FINANCE_COUNTDOWN -> {
                             CountdownModule(
@@ -205,7 +217,6 @@ fun FinanceScreen(
 
             Spacer(modifier = Modifier.height(100.dp))
         }
-    }
 
     // --- DIALOGS ---
     if (showEditDialog) {
