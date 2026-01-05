@@ -3,15 +3,16 @@ package com.lalit.countanything.ui.screens
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,6 +42,12 @@ fun HiddenVaultScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var editingEntry by remember { mutableStateOf<StorageHelper.VaultEntry?>(null) }
     var secretText by remember { mutableStateOf("") }
+    
+    // Cyberpunk Theme Colors
+    val NeonBlueGrey = Color(0xFF607D8B) 
+    val NeonIce = Color(0xFF80DEEA)
+    val BgDark = Color(0xFF0F171A) // Slightly bluish dark
+    val PanelBg = Color(0xFF162025)
 
     // Helper to open dialog
     fun openDialog(entry: StorageHelper.VaultEntry? = null) {
@@ -49,32 +57,43 @@ fun HiddenVaultScreen(
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = BgDark,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Lock, null, tint = Color.Green, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.vault_title), color = Color.Green, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                         Icon(Icons.Default.Lock, null, tint = NeonIce, modifier = Modifier.size(16.dp))
+                         Spacer(modifier = Modifier.width(8.dp))
+                         Text(
+                            "SECURE_CORE // VAULT", 
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            letterSpacing = (-0.5).sp,
+                            color = NeonIce
+                        )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.cancel), tint = Color.Green)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = NeonIce)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = BgDark,
+                    titleContentColor = NeonIce
+                )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { openDialog() },
-                containerColor = Color.Green,
+                containerColor = NeonIce,
                 contentColor = Color.Black,
-                modifier = Modifier.springyTouch()
+                modifier = Modifier.springyTouch(),
+                shape = CutCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.Add, stringResource(R.string.vault_add_secret))
+                Icon(Icons.Default.Add, "ENC_NEW")
             }
         }
     ) { innerPadding ->
@@ -84,21 +103,35 @@ fun HiddenVaultScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text(
-                stringResource(R.string.vault_subtitle),
-                color = Color.Green.copy(alpha = 0.5f),
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                fontSize = 12.sp
-            )
+            // Header Status
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    "ENCRYPTION: AES-256",
+                    color = NeonBlueGrey,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 10.sp
+                )
+                Text(
+                    "ENTRIES: ${vaultEntries.size}",
+                    color = NeonBlueGrey,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 10.sp
+                )
+            }
+            Box(Modifier.fillMaxWidth().height(1.dp).background(NeonBlueGrey.copy(alpha = 0.3f)).padding(vertical = 8.dp))
             Spacer(modifier = Modifier.height(16.dp))
             
             if (vaultEntries.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "No secrets yet. Tap + to add.",
-                        color = Color.Green.copy(alpha = 0.3f),
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Lock, null, tint = NeonBlueGrey.copy(alpha = 0.2f), modifier = Modifier.size(64.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "[ STORAGE_EMPTY ]",
+                            color = NeonBlueGrey.copy(alpha = 0.5f),
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
                 }
             } else {
                 LazyColumn(
@@ -124,25 +157,20 @@ fun HiddenVaultScreen(
                             backgroundContent = {
                                 val color by animateColorAsState(
                                     when (dismissState.targetValue) {
-                                        SwipeToDismissBoxValue.EndToStart -> Color.Red.copy(alpha = 0.8f)
+                                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFD32F2F).copy(alpha = 0.8f)
                                         else -> Color.Transparent
                                     }, label = "SwipeColor"
-                                )
-                                val scale by animateFloatAsState(
-                                    if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) 1f else 0.75f,
-                                    label = "SwipeScale"
                                 )
                                 Box(
                                     Modifier
                                         .fillMaxSize()
-                                        .background(color, MaterialTheme.shapes.medium)
+                                        .background(color, CutCornerShape(topStart = 0.dp, bottomEnd = 16.dp))
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = Alignment.CenterEnd
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,
                                         contentDescription = "Delete",
-                                        modifier = Modifier.scale(scale),
                                         tint = Color.White
                                     )
                                 }
@@ -151,12 +179,24 @@ fun HiddenVaultScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .background(PanelBg, CutCornerShape(topStart = 0.dp, bottomEnd = 16.dp))
+                                        .border(1.dp, NeonBlueGrey.copy(alpha = 0.3f), CutCornerShape(topStart = 0.dp, bottomEnd = 16.dp))
                                         .clickable { openDialog(entry) }
+                                        .padding(16.dp)
                                 ) {
-                                    StealthMorseText(
-                                        text = entry.secretText,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
+                                    Column {
+                                        Text(
+                                            "ID: ${entry.id.take(8).uppercase()}",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 8.sp,
+                                            color = NeonBlueGrey
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        StealthMorseText(
+                                            text = entry.secretText,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
                                 }
                             }
                         )
@@ -168,20 +208,38 @@ fun HiddenVaultScreen(
         if (showAddDialog) {
             AlertDialog(
                 onDismissRequest = { showAddDialog = false },
-                title = { Text(if (editingEntry == null) stringResource(R.string.vault_new_entry) else "Edit Secret") },
+                title = { 
+                    Text(
+                        if (editingEntry == null) "NEW_SECURE_ENTRY" else "MODIFY_ENTRY", 
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        color = NeonIce
+                    ) 
+                },
                 text = {
-                    OutlinedTextField(
-                        value = secretText,
-                        onValueChange = { secretText = it },
-                        label = { Text(stringResource(R.string.vault_secret_text)) },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Green,
-                            focusedLabelColor = Color.Green,
-                            focusedTextColor = Color.Green,
-                            cursorColor = Color.Green
+                    Column {
+                        Text(
+                            "> ENTER_PAYLOAD_DATA:", 
+                            fontFamily = FontFamily.Monospace, 
+                            fontSize = 10.sp, 
+                            color = NeonBlueGrey
                         )
-                    )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = secretText,
+                            onValueChange = { secretText = it },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = NeonIce,
+                                unfocusedBorderColor = NeonBlueGrey,
+                                focusedTextColor = NeonIce,
+                                cursorColor = NeonIce,
+                                focusedContainerColor = Color(0xFF0F171A),
+                                unfocusedContainerColor = Color(0xFF0F171A)
+                            ),
+                            textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace)
+                        )
+                    }
                 },
                 confirmButton = {
                     TextButton(
@@ -196,17 +254,16 @@ fun HiddenVaultScreen(
                             }
                         }
                     ) {
-                        Text(stringResource(R.string.vault_encrypt_save), color = Color.Green)
+                        Text("[ ENCRYPT_SAVE ]", fontFamily = FontFamily.Monospace, color = NeonIce, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showAddDialog = false }) {
-                        Text(stringResource(R.string.cancel), color = Color.Green)
+                        Text("[ ABORT ]", fontFamily = FontFamily.Monospace, color = Color.Gray)
                     }
                 },
-                containerColor = Color(0xFF121212),
-                titleContentColor = Color.Green,
-                textContentColor = Color.Green
+                containerColor = Color(0xFF1E272C),
+                shape = CutCornerShape(16.dp)
             )
         }
     }

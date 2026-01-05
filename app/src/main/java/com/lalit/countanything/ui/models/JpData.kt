@@ -7,14 +7,16 @@ data class Kanji(
     val character: String,
     val onyomi: List<String>,
     val kunyomi: List<String>,
-    val meaning: String
+    val meaning: String,
+    val example: String = "" // Added example field
 )
 
 @Serializable
 data class Vocab(
     val word: String,
     val reading: String,
-    val meaning: String
+    val meaning: String,
+    val example: String = "" // Added example field
 )
 
 @Serializable

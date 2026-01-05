@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">YOROZU</string>
+    <string name="app_name" translatable="false">Yorozu</string>
 
     <!-- Navigation -->
     <!-- Navigation -->
@@ -12,6 +12,7 @@
     <string name="nav_events">Events</string>
     <string name="nav_tools">Tools</string>
     <string name="cigarette_history_log">Cigarette History Log</string>
+    <string name="cigarette_counter_title">Cigarettes</string>
 
     <!-- Welcome Screen -->
     <string name="welcome_get_started" translatable="false">Get Started</string>

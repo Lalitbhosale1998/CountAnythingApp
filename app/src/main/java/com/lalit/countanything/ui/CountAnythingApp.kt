@@ -70,7 +70,6 @@ fun CountAnythingApp(
     viewModel: MainViewModel = viewModel()
 ) {
     // --- State for Dialogs ---
-    var showDatePicker by remember { mutableStateOf(false) }
     var showAddCounterDialog by remember { mutableStateOf(false) }
     var showAddFinanceTrackerDialog by remember { mutableStateOf(false) }
     var showAddEventDialog by remember { mutableStateOf(false) }
@@ -88,6 +87,8 @@ fun CountAnythingApp(
     val totalSentToIndia by viewModel.totalSentToIndia.collectAsState()
     val genericCounters: List<Counter> by viewModel.genericCounters.collectAsState()
     val daysUntilSalary by viewModel.daysUntilSalary.collectAsState()
+    val workingDaysUntilSalary by viewModel.workingDaysUntilSalary.collectAsState()
+    val projectedCommuteCost by viewModel.projectedCommuteCost.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val genericCountersForDate: List<Counter> by viewModel.genericCountersForDate.collectAsState()
     val events by viewModel.events.collectAsState()
@@ -170,8 +171,7 @@ fun CountAnythingApp(
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding()), // Only pad bottom for the nav bar
+                        .fillMaxSize(),
                     userScrollEnabled = true 
                 ) { page ->
                     // Map page index to Screen
@@ -208,9 +208,13 @@ fun CountAnythingApp(
                         Screen.Finance -> {
                             FinanceScreen(
                                 daysUntilSalary = daysUntilSalary,
+                                workingDaysUntilSalary = workingDaysUntilSalary,
+                                projectedCommuteCost = projectedCommuteCost,
                                 currencySymbol = currencySymbol,
                                 salaryDay = salaryDay,
-                                onSetSalaryDate = { showDatePicker = true },
+                                onSetSalaryDate = { date, holidays, fare -> 
+                                    viewModel.updateSalaryDay(date, holidays, fare) 
+                                },
                                 monthlySalaries = monthlySalaries,
                                 monthlySavings = monthlySavings,
                                 onSaveFinancialData = { month, salary, savings ->
@@ -329,34 +333,7 @@ fun CountAnythingApp(
             }
         }
 
-        if (showDatePicker) {
-            val datePickerState = rememberDatePickerState()
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showDatePicker = false
-                            datePickerState.selectedDateMillis?.let { millis ->
-                                val newDate = Instant.ofEpochMilli(millis)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                                viewModel.updateSalaryDay(newDate)
-                            }
-                        }
-                    ) {
-                        Text("OK")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDatePicker = false }) {
-                        Text("Cancel")
-                    }
-                }
-            ) {
-                DatePicker(state = datePickerState)
-            }
-        }
+
         if (showAddCounterDialog) {
             AddCounterDialog(
                 onDismiss = { showAddCounterDialog = false },

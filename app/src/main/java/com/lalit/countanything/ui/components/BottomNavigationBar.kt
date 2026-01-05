@@ -41,38 +41,46 @@ fun BottomNavigationBar(
     val haptic = LocalHapticFeedback.current
     val screens = Screen.values()
 
-    Surface(
-        tonalElevation = 1.dp,
-        shadowElevation = 16.dp, // Neumorphic lift
-        color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding() // Push up from system bar
+            .padding(bottom = 16.dp, start = 12.dp, end = 12.dp), // Floating Margins
+        contentAlignment = Alignment.Center
     ) {
-
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()) // Allow scrolling
-                .navigationBarsPadding()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp), // Use spacedBy instead of SpaceBetween for scrollable row
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            tonalElevation = 8.dp,
+            shadowElevation = 16.dp, 
+            shape = CircleShape, // Stadium / Capsule Shape
+            // Glassy look: Slightly transparent high surface
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
+            modifier = Modifier.wrapContentWidth() // Shrink to fit content if possible, but it's scrollable so full width
+                .height(72.dp) // Fixed height for consistency
+                .widthIn(max = 600.dp) // Prevent being too wide on tablets
         ) {
-            screens.forEach { screen ->
-                BubbleNavItem(
-                    screen = screen,
-                    isSelected = currentScreen == screen,
-                    onClick = {
-                        if (currentScreen != screen) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onScreenSelected(screen)
+            Row(
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState()) // Preserve scrolling
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp), 
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                screens.forEach { screen ->
+                    BubbleNavItem(
+                        screen = screen,
+                        isSelected = currentScreen == screen,
+                        onClick = {
+                            if (currentScreen != screen) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onScreenSelected(screen)
+                            }
+                        },
+                        onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onScreenLongClick(screen)
                         }
-                    },
-                    onLongClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onScreenLongClick(screen)
-                    }
-                )
+                    )
+                }
             }
         }
     }
@@ -179,17 +187,8 @@ fun BubbleNavItem(
             )
         }
 
-    val iconJump by animateFloatAsState(
-        targetValue = if (isSelected) -12f else 0f,
-        animationSpec = spring(
-            dampingRatio = 0.4f,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "IconJump"
-    )
-
     Row(
-        modifier = Modifier.padding(horizontal = 12.dp),
+        modifier = Modifier.padding(horizontal = 16.dp), // Increased padding
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
@@ -197,9 +196,7 @@ fun BubbleNavItem(
             imageVector = icon,
             contentDescription = stringResource(labelRes),
             tint = if (isSelected) bubbleColor else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .graphicsLayer { translationY = iconJump }
-                .size(24.dp)
+            modifier = Modifier.size(24.dp) // Removed translationY
         )
             
             AnimatedVisibility(

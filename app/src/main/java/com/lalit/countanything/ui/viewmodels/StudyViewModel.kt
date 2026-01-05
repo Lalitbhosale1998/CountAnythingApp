@@ -54,48 +54,68 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
             userVocabList = repository.loadUserVocab().toMutableList()
             userGrammarList = repository.loadUserGrammar().toMutableList()
 
-            // Combine and Emit
-            _kanjiList.value = assetKanji + userKanjiList
-            _vocabList.value = assetVocab + userVocabList
-            _grammarList.value = assetGrammar + userGrammarList
+            // Combine and Emit (User items override asset items)
+            _kanjiList.value = (userKanjiList + assetKanji).distinctBy { it.character }
+            _vocabList.value = (userVocabList + assetVocab).distinctBy { it.word }
+            _grammarList.value = (userGrammarList + assetGrammar).distinctBy { it.pattern }
         }
     }
 
-    fun addKanji(character: String, meaning: String, onyomi: String, kunyomi: String) {
+    fun addKanji(character: String, meaning: String, onyomi: String, kunyomi: String, example: String = "") {
         val newItem = Kanji(
             character = character,
             meaning = meaning,
             onyomi = onyomi.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-            kunyomi = kunyomi.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            kunyomi = kunyomi.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+            example = example
         )
         // Add to user list and save
-        userKanjiList.add(newItem)
+        userKanjiList.removeAll { it.character == character } // Remove existing if any (update case)
+        userKanjiList.add(0, newItem) // Add to top
         repository.saveUserKanji(userKanjiList)
         
         // Update combined flow
         val currentList = _kanjiList.value.toMutableList()
-        currentList.add(newItem)
+        currentList.removeAll { it.character == character }
+        currentList.add(0, newItem)
         _kanjiList.value = currentList
     }
 
-    fun addVocab(word: String, reading: String, meaning: String) {
-        val newItem = Vocab(word, reading, meaning)
-        userVocabList.add(newItem)
+    fun updateKanji(originalChar: String, newMeaning: String, newOn: String, newKun: String, newExample: String) {
+        // reuse addKanji which handles override/update logic since we use distinctBy and removeAll
+        addKanji(originalChar, newMeaning, newOn, newKun, newExample)
+    }
+
+    fun addVocab(word: String, reading: String, meaning: String, example: String = "") {
+        val newItem = Vocab(word, reading, meaning, example)
+        userVocabList.removeAll { it.word == word }
+        userVocabList.add(0, newItem)
         repository.saveUserVocab(userVocabList)
         
         val currentList = _vocabList.value.toMutableList()
-        currentList.add(newItem)
+        currentList.removeAll { it.word == word }
+        currentList.add(0, newItem)
         _vocabList.value = currentList
+    }
+
+    fun updateVocab(originalWord: String, reading: String, meaning: String, example: String) {
+        addVocab(originalWord, reading, meaning, example)
     }
 
     fun addGrammar(pattern: String, meaning: String, example: String) {
         val newItem = Grammar(pattern, meaning, example)
-        userGrammarList.add(newItem)
+        userGrammarList.removeAll { it.pattern == pattern }
+        userGrammarList.add(0, newItem)
         repository.saveUserGrammar(userGrammarList)
         
         val currentList = _grammarList.value.toMutableList()
-        currentList.add(newItem)
+        currentList.removeAll { it.pattern == pattern }
+        currentList.add(0, newItem)
         _grammarList.value = currentList
+    }
+
+    fun updateGrammar(originalPattern: String, meaning: String, example: String) {
+        addGrammar(originalPattern, meaning, example)
     }
 
     private fun loadProgress() {

@@ -21,98 +21,302 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lalit.countanything.ui.components.BouncyButton
-import com.airbnb.lottie.compose.*
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import kotlinx.coroutines.delay
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.School
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import com.lalit.countanything.R
 
 @Composable
 fun WelcomeScreen(onContinueClicked: () -> Unit) {
-    var showLottie by remember { mutableStateOf(false) }
-    var showText by remember { mutableStateOf(false) }
-    var showButton by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    var startAnimation by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        showLottie = true
-        delay(400)
-        showText = true
-        delay(400)
-        showButton = true
+        startAnimation = true
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
     }
 
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.welcome))
-    val progress by animateLottieCompositionAsState(
-        composition,
-        iterations = LottieConstants.IterateForever
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // --- 1. LOTTIE HERO ---
-        AnimatedVisibility(
-            visible = showLottie,
-            enter = fadeIn(tween(1000)) + slideInVertically(tween(1000)) { -100 }
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0) // Edge-to-edge
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            LottieAnimation(
-                composition = composition,
-                progress = { progress },
-                modifier = Modifier.size(280.dp)
-            )
-        }
+            // --- TOP HERO SECTION (65% Height) ---
+            Box(
+                modifier = Modifier
+                    .weight(0.65f)
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp) // Fixed padding syntax
+                    .clip(RoundedCornerShape(32.dp)) // Round all corners
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
+            ) {
+                // Determine layout based on orientation or just center
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    val infiniteTransition = rememberInfiniteTransition(label = "FloatingAssets")
+                    
+                    val floatAnim by infiniteTransition.animateFloat(
+                        initialValue = -12f,
+                        targetValue = 12f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2500, easing = LinearOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "FloatAnim"
+                    )
 
-        Spacer(modifier = Modifier.height(24.dp))
+                    val swayAnim by infiniteTransition.animateFloat(
+                        initialValue = -8f,
+                        targetValue = 8f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(3500, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "SwayAnim"
+                    )
 
-        // --- 2. MODERN TYPOGRAPHY ---
-        AnimatedVisibility(
-            visible = showText,
-            enter = fadeIn(tween(800)) + slideInVertically(tween(800)) { 50 }
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "マイログ",
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.welcome_subtitle),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    val scaleAnim by infiniteTransition.animateFloat(
+                        initialValue = 0.95f,
+                        targetValue = 1.05f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(4000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "ScaleAnim"
+                    )
+
+                    AnimatedVisibility(
+                        visible = startAnimation,
+                        enter = scaleIn(tween(800, delayMillis = 200)) + fadeIn()
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            // --- HABITS ORB (CENTER) ---
+                            GlassOrb(
+                                icon = Icons.Default.AutoAwesome,
+                                size = 160.dp,
+                                mainColor = Color(0xFFFF5252),
+                                secondaryColor = Color(0xFFFF1744),
+                                modifier = Modifier
+                                    .graphicsLayer {
+                                        translationY = floatAnim
+                                        rotationZ = swayAnim * 0.5f
+                                        scaleX = scaleAnim
+                                        scaleY = scaleAnim
+                                    }
+                            )
+                            
+                            // --- STUDY ORB (TOP RIGHT) ---
+                            GlassOrb(
+                                icon = Icons.Default.School,
+                                size = 80.dp,
+                                mainColor = Color(0xFF448AFF),
+                                secondaryColor = Color(0xFF2979FF),
+                                modifier = Modifier
+                                    .offset(x = 100.dp, y = (-90).dp)
+                                    .graphicsLayer {
+                                        translationY = -floatAnim
+                                        rotationZ = swayAnim
+                                    }
+                            )
+                            
+                            // --- FINANCE ORB (BOTTOM LEFT) ---
+                            GlassOrb(
+                                icon = Icons.Default.AccountBalanceWallet,
+                                size = 80.dp,
+                                mainColor = Color(0xFFFFD740),
+                                secondaryColor = Color(0xFFFFAB40),
+                                modifier = Modifier
+                                    .offset(x = (-100).dp, y = 90.dp)
+                                    .graphicsLayer {
+                                        translationY = floatAnim * 0.8f
+                                        rotationZ = -swayAnim * 1.5f
+                                    }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // --- BOTTOM CONTENT SECTION (35% Height) ---
+            Column(
+                modifier = Modifier
+                    .weight(0.35f)
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Text Block
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    AnimatedVisibility(
+                        visible = startAnimation,
+                        enter = slideInVertically(tween(600, delayMillis = 400)) { 50 } + fadeIn()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.displayLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = (-2).sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    AnimatedVisibility(
+                        visible = startAnimation,
+                        enter = slideInVertically(tween(600, delayMillis = 600)) { 50 } + fadeIn()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.welcome_subtitle),
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Button Block
+                AnimatedVisibility(
+                    visible = startAnimation,
+                    enter = scaleIn(tween(500, delayMillis = 900)) + fadeIn()
+                ) {
+                    Button(
+                        onClick = { 
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onContinueClicked() 
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .padding(horizontal = 16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = CircleShape // Pill shape
+                    ) {
+                        Text(
+                            text = stringResource(R.string.welcome_get_started),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                    }
+                }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(64.dp))
+@Composable
+fun GlassOrb(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    size: androidx.compose.ui.unit.Dp,
+    mainColor: Color,
+    secondaryColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
+        // --- Radial Glow ---
+        Box(
+            modifier = Modifier
+                .size(size * 2)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            mainColor.copy(alpha = 0.3f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
 
-        // --- 3. CTA BUTTON ---
-        AnimatedVisibility(
-            visible = showButton,
-            enter = fadeIn(tween(600)) + expandVertically(tween(600))
+        // --- The Orb Body ---
+        Surface(
+            modifier = Modifier.size(size),
+            shape = CircleShape,
+            color = Color.Transparent,
+            border = androidx.compose.foundation.BorderStroke(
+                width = 2.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.6f),
+                        Color.White.copy(alpha = 0.1f)
+                    )
+                )
+            ),
+            shadowElevation = 8.dp
         ) {
-            BouncyButton(
-                onClick = onContinueClicked,
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(72.dp),
-                contentPadding = PaddingValues(horizontal = 32.dp)
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                mainColor.copy(alpha = 0.8f),
+                                secondaryColor.copy(alpha = 0.4f)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(R.string.welcome_get_started),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(size * 0.5f),
+                    tint = Color.White
                 )
             }
         }

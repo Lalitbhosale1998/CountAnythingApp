@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -212,6 +213,9 @@ fun FinancialSparkline(
 fun CountdownModule(
     title: String,
     targetDate: LocalDate?,
+    workingDays: Long? = null,
+    commuteCost: Float = 0f,
+    currencySymbol: String = "¥",
     onEditDate: () -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
@@ -292,7 +296,7 @@ fun CountdownModule(
                     // Track
                     WavyCircularProgressIndicator(
                         progress = 1f,
-                        modifier = Modifier.size(200.dp),
+                        modifier = Modifier.size(260.dp),
                         color = Color.White.copy(alpha = 0.1f),
                         trackColor = Color.Transparent,
                         strokeWidth = 35.dp.value, 
@@ -302,7 +306,7 @@ fun CountdownModule(
                     // Progress
                     WavyCircularProgressIndicator(
                         progress = progress,
-                        modifier = Modifier.size(200.dp),
+                        modifier = Modifier.size(260.dp),
                         color = Color(0xFF00E676), // Neon Green
                         trackColor = Color.Transparent,
                         strokeWidth = 35.dp.value,
@@ -310,9 +314,15 @@ fun CountdownModule(
                     )
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        AnimatedContent(targetState = daysRemaining, label = "CountdownAnim") { days ->
+                        // Determine what to show as the primary large number
+                        val primaryValue = if (workingDays != null) workingDays else daysRemaining
+                        val secondaryValue = if (workingDays != null) daysRemaining else null
+                        
+                        val primaryLabel = if (workingDays != null) "WORKING DAYS" else stringResource(R.string.finance_days_left_label).uppercase()
+                        
+                        AnimatedContent(targetState = primaryValue, label = "CountdownAnim") { number ->
                             Text(
-                                text = days?.toString() ?: "??",
+                                text = number?.toString() ?: "??",
                                 style = MaterialTheme.typography.displayLarge.copy(
                                     fontWeight = FontWeight.Black,
                                     fontSize = 64.sp,
@@ -325,10 +335,27 @@ fun CountdownModule(
                             )
                         }
                         Text(
-                            stringResource(R.string.finance_days_left_label).uppercase(),
+                            primaryLabel,
                             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 2.sp),
                             color = Color.White.copy(alpha = 0.7f)
                         )
+                        
+                        if (secondaryValue != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                color = Color.White.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    "$secondaryValue TOTAL DAYS",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+
                     }
                 }
 
@@ -336,15 +363,46 @@ fun CountdownModule(
 
 
                 
-                SqueezeButton(
-                    onClick = onEditDate,
-                    icon = Icons.Default.EditCalendar,
-                    contentDescription = stringResource(R.string.cd_edit),
-                    color = Color.White.copy(alpha = 0.2f),
-                    iconColor = Color.White,
-                    modifier = Modifier.size(56.dp),
-                    iconSize = 24.dp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SqueezeButton(
+                        onClick = onEditDate,
+                        icon = Icons.Default.EditCalendar,
+                        contentDescription = stringResource(R.string.cd_edit),
+                        color = Color.White.copy(alpha = 0.2f),
+                        iconColor = Color.White,
+                        modifier = Modifier.size(56.dp),
+                        iconSize = 24.dp
+                    )
+
+                    if (commuteCost > 0) {
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFF9800))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "EST. COMMUTE",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Black),
+                                    color = Color(0xFFFF9800) // Solid Orange
+                                )
+                                Text(
+                                    "$currencySymbol${commuteCost.toInt()}",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White // White for readability
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

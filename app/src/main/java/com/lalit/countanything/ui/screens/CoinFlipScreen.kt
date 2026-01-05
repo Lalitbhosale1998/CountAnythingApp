@@ -3,6 +3,7 @@ package com.lalit.countanything.ui.screens
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -14,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,38 +43,18 @@ fun CoinFlipScreen(
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
-    // Flip Logic
+    val neonGold = Color(0xFFFFD700)
+    val bgDark = Color(0xFF101010)
+
+    // Flip Logic (Preserved)
     fun flipCoin() {
         if (isFlipping) return
         isFlipping = true
         
         scope.launch {
             val resultIsHeads = kotlin.random.Random.nextBoolean()
-            
-            // 5 full spins (1800) + target
             val baseSpins = 1800f 
-            // If current is Heads (0), target Heads is 0 + 1800 = 1800
-            // If current is Heads (0), target Tails is 180 + 1800 = 1980
-            // logic relative to current rotation to keep adding up
-            
             val current = rotationAnim.value
-            // We want to land on a multiple of 360 for Heads, 180+360*N for Tails
-            // But visually 0 and 360 are same.
-            
-            val targetRotation = if (resultIsHeads) 0f else 180f
-            // We need to add enough 360s to current to make it spin
-            // Find next multiple of 360 greater than current + baseSpins
-            
-            val minimumTarget = current + baseSpins
-            // Adjustment to land on 0 or 180
-            // If we want 0 (Heads):
-            // next target = (minimumTarget round up to next 360) 
-            // If we want 180 (Tails):
-            // next target = (minimumTarget round up to next 360) + 180?
-            
-            // Simpler: Just add 1800 + delta
-            // current % 360 gives us current position (0 or 180 essentially)
-            // If result (0/180) != current % 360, add 180 extra.
             
             val currentMod = current % 360
             val targetMod = if (resultIsHeads) 0f else 180f
@@ -81,7 +62,7 @@ fun CoinFlipScreen(
             var delta = targetMod - currentMod
             if (delta < 0) delta += 360f
             
-            val nextTarget = current + 1800f + delta // 1800 is 5 full spins
+            val nextTarget = current + 1800f + delta 
             
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 
@@ -103,40 +84,48 @@ fun CoinFlipScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Coin Flip", fontWeight = FontWeight.Bold) },
+                title = { 
+                    Text(
+                        "PROBABILITY_ENGINE", 
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        letterSpacing = (-0.5).sp
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = neonGold)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = bgDark,
+                    titleContentColor = neonGold
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = bgDark
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.weight(0.5f))
             
-            // INSTRUCTION
+            // STATUS READOUT
             Text(
-                text = if (isFlipping) "Flipping..." else "Touch the coin to flip",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = if (isFlipping) "STATUS: COMPUTING_TRAJECTORY..." else "STATUS: READY_FOR_INPUT",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                color = neonGold.copy(alpha = if (isFlipping) 1f else 0.6f)
             )
             
             Spacer(modifier = Modifier.height(32.dp))
 
             // THE COIN
-            // We use graphicsLayer for 3D rotation
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -148,107 +137,87 @@ fun CoinFlipScreen(
                     .clickable(enabled = !isFlipping) { flipCoin() }
             ) {
                 // Determine face based on rotation
-                // 90-270 is Back
                 val angle = rotationAnim.value % 360
                 val isBack = angle in 90f..270f
                 
                 if (isBack) {
-                    // Back Face (Tails)
-                    // We must rotate content 180Y locally so it's not mirrored when seen from "behind" the container
                     Box(modifier = Modifier.graphicsLayer { rotationY = 180f }) {
-                         PremiumCoin(
-                             text = "TAILS",
-                             subText = "ONE DOLLAR",
-                             isHeads = false
+                         TechCoin(
+                             text = "FALSE",
+                             subText = "TAILS",
+                             color = neonGold
                          )
                     }
                 } else {
-                    // Front Face (Heads)
-                    PremiumCoin(
-                        text = "HEADS",
-                        subText = "LIBERTY",
-                        isHeads = true
+                    TechCoin(
+                        text = "TRUE",
+                        subText = "HEADS",
+                        color = neonGold
                     )
                 }
             }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // RESULT LOG
+            if (!isFlipping) {
+                Text(
+                    text = "RESULT: ${if(isHeads) "TRUE (HEADS)" else "FALSE (TAILS)"}",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
+            
+            // DECORATIVE BOTTOM TEXT
+            Text(
+                "BINARY_DECISION_UNIT // v2.0",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                color = Color.Gray
+            )
         }
     }
 }
 
 @Composable
-fun PremiumCoin(
+fun TechCoin(
     text: String,
     subText: String,
-    isHeads: Boolean
+    color: Color
 ) {
-    // Gold Palettes
-    val goldLight = Color(0xFFFFE672)
-    val goldMedium = Color(0xFFFFD700)
-    val goldDark = Color(0xFFC59200)
-    val goldShadow = Color(0xFF8B6500)
-
-    val gradient = Brush.radialGradient(
-        colors = listOf(goldLight, goldMedium, goldDark),
-        center = Offset.Unspecified,
-        radius = 300f
-    )
-    
-    val sheenGradient = Brush.linearGradient(
-        colors = listOf(
-            goldShadow.copy(alpha = 0.4f),
-            Color.Transparent,
-            Color.White.copy(alpha = 0.4f),
-            Color.Transparent,
-            goldShadow.copy(alpha = 0.4f)
-        ),
-        start = Offset(0f, 0f),
-        end = Offset(100f, 1000f) // Diagonal sheen
-    )
-
     Box(
         modifier = Modifier
             .size(260.dp)
-            .shadow(elevation = 12.dp, shape = CircleShape)
             .clip(CircleShape)
-            .background(gradient),
+            .background(Color(0xFF1A1A1A))
+            .border(2.dp, color, CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        // Shine Overlay
-         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(sheenGradient)
-        )
-        
+        // Tech Circles
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            val center = Offset(w / 2, h / 2)
+            val center = Offset(size.width / 2, size.height / 2)
+            val radius = size.width / 2
             
-            // 1. Milled Edge (Ridges)
+            // Dashed Ring
             drawCircle(
-                color = goldShadow,
-                radius = w / 2 - 4.dp.toPx(),
+                color = color.copy(alpha = 0.5f),
+                radius = radius - 30.dp.toPx(),
                 style = Stroke(
-                    width = 8.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f), 0f)
+                    width = 2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f))
                 )
             )
             
-            // 2. Inner Ring
-            drawCircle(
-                color = goldDark,
-                radius = w / 2 - 20.dp.toPx(),
-                style = Stroke(width = 2.dp.toPx())
+            // Inner Solid Ring
+             drawCircle(
+                color = color.copy(alpha = 0.2f),
+                radius = radius - 60.dp.toPx(),
+                style = Stroke(width = 4.dp.toPx())
             )
-            
-            // 3. Center Decoration (Star or simple geometry)
-            if (isHeads) {
-                // Star for Heads
-                // Simplified drawing or stick to text
-            }
         }
         
         // Text Content
@@ -258,27 +227,19 @@ fun PremiumCoin(
         ) {
             Text(
                 text = text,
+                fontFamily = FontFamily.Monospace,
                 style = MaterialTheme.typography.displayMedium.copy(
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp,
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = goldShadow,
-                        offset = Offset(2f, 2f),
-                        blurRadius = 2f
-                    )
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
                 ),
-                color = goldDark
+                color = color
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
             Text(
-                text = "★ $subText ★", // Add stars
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 4.sp
-                ),
-                color = goldShadow
+                text = subText, 
+                fontFamily = FontFamily.Monospace,
+                style = MaterialTheme.typography.labelLarge,
+                color = color.copy(alpha = 0.7f)
             )
         }
     }

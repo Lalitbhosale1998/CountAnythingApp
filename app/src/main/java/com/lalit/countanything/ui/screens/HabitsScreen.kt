@@ -76,7 +76,7 @@ fun HabitsScreen(
                     top = 16.dp + padding.calculateTopPadding(),
                     start = 16.dp, 
                     end = 16.dp, 
-                    bottom = 80.dp + padding.calculateBottomPadding() + 16.dp
+                    bottom = 120.dp + padding.calculateBottomPadding()
                 ),
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),

@@ -14,6 +14,8 @@ import org.json.JSONObject
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object StorageHelper {
     data class GoalData(val title: String, val price: Float, val amountNeeded: Float)
@@ -63,7 +65,7 @@ object StorageHelper {
      * Saves the cigarette count for a specific date into the JSON object.
      * This is now a suspend function and does not block the main thread.
      */
-    suspend fun saveCountForDate(context: Context, date: LocalDate, count: Float) {
+    suspend fun saveCountForDate(context: Context, date: LocalDate, count: Float) = withContext(Dispatchers.IO) {
         val dateKey = date.format(dateFormatter)
         context.dataStore.edit { settings ->
             val jsonString = settings[DAILY_COUNTS] ?: "{}"
@@ -105,25 +107,25 @@ object StorageHelper {
      * Loads the cigarette count for a specific date from the JSON object.
      * This is now a suspend function. Returns 0 if no count is found.
      */
-    suspend fun loadCountForDate(context: Context, date: LocalDate): Float {
+    suspend fun loadCountForDate(context: Context, date: LocalDate): Float = withContext(Dispatchers.IO) {
         val dateKey = date.format(dateFormatter)
         val jsonString = context.dataStore.data.first()[DAILY_COUNTS] ?: "{}"
         val json = JSONObject(jsonString)
-        return json.optDouble(dateKey, 0.0).toFloat()
+        json.optDouble(dateKey, 0.0).toFloat()
     }
 
     /**
      * Loads all saved counts from the JSON object.
      * This is used to populate the entire calendar history.
      */
-    suspend fun loadRecentCounts(context: Context): Map<String, Float> {
+    suspend fun loadRecentCounts(context: Context): Map<String, Float> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data.first()[DAILY_COUNTS] ?: "{}"
         val json = JSONObject(jsonString)
         val countsMap = mutableMapOf<String, Float>()
         json.keys().forEach { dateKey ->
             countsMap[dateKey] = json.getDouble(dateKey).toFloat()
         }
-        return countsMap
+        countsMap
     }
 
     // --- Salary Day Functions ---
@@ -148,12 +150,40 @@ object StorageHelper {
         }.first()
     }
 
+    private val SALARY_HOLIDAYS = intPreferencesKey("salary_holidays")
+
+    suspend fun saveSalaryHolidays(context: Context, holidays: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[SALARY_HOLIDAYS] = holidays
+        }
+    }
+
+    suspend fun loadSalaryHolidays(context: Context): Int {
+        return context.dataStore.data.map { preferences ->
+            preferences[SALARY_HOLIDAYS] ?: 0
+        }.first()
+    }
+
+    private val SALARY_ONE_WAY_FARE = floatPreferencesKey("salary_one_way_fare")
+
+    suspend fun saveSalaryOneWayFare(context: Context, fare: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[SALARY_ONE_WAY_FARE] = fare
+        }
+    }
+
+    suspend fun loadSalaryOneWayFare(context: Context): Float {
+        return context.dataStore.data.map { preferences ->
+            preferences[SALARY_ONE_WAY_FARE] ?: 0f
+        }.first()
+    }
+
     // --- NEW: Financial Data Functions ---
 
     /**
      * Saves the salary for a specific month.
      */
-    suspend fun saveSalaryForMonth(context: Context, month: YearMonth, salary: Float) {
+    suspend fun saveSalaryForMonth(context: Context, month: YearMonth, salary: Float) = withContext(Dispatchers.IO) {
         val monthKey = month.format(monthFormatter)
         context.dataStore.edit { settings ->
             val jsonString = settings[MONTHLY_SALARIES] ?: "{}"
@@ -166,14 +196,14 @@ object StorageHelper {
     /**
      * Loads all stored monthly salaries.
      */
-    suspend fun loadAllSalaries(context: Context): Map<String, Float> {
+    suspend fun loadAllSalaries(context: Context): Map<String, Float> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data.first()[MONTHLY_SALARIES] ?: "{}"
         val json = JSONObject(jsonString)
         val salariesMap = mutableMapOf<String, Float>()
         json.keys().forEach { monthKey ->
             salariesMap[monthKey] = json.getDouble(monthKey).toFloat()
         }
-        return salariesMap
+        salariesMap
     }
 
     /**
@@ -204,7 +234,7 @@ object StorageHelper {
 
     // --- NEW: Generic Multi-Counter Functions ---
 
-    suspend fun saveGenericCounters(context: Context, counters: List<Counter>) {
+    suspend fun saveGenericCounters(context: Context, counters: List<Counter>) = withContext(Dispatchers.IO) {
         val jsonArray = JSONArray()
         counters.forEach { counter ->
             val counterObj = JSONObject()
@@ -243,7 +273,7 @@ object StorageHelper {
         }
     }
 
-    suspend fun loadGenericCounters(context: Context): List<Counter> {
+    suspend fun loadGenericCounters(context: Context): List<Counter> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data.first()[GENERIC_COUNTERS] ?: "[]"
         val jsonArray = JSONArray(jsonString)
         val counters = mutableListOf<Counter>()
@@ -295,12 +325,12 @@ object StorageHelper {
                 )
             )
         }
-        return counters
+        counters
     }
 
     // --- Sexual Health Permanent Storage ---
 
-    suspend fun saveSexualHealthForDate(context: Context, date: LocalDate, count: Float) {
+    suspend fun saveSexualHealthForDate(context: Context, date: LocalDate, count: Float) = withContext(Dispatchers.IO) {
         val dateKey = date.format(dateFormatter)
         context.dataStore.edit { settings ->
             val jsonString = settings[DAILY_SEXUAL_HEALTH_COUNTS] ?: "{}"
@@ -310,34 +340,34 @@ object StorageHelper {
         }
     }
 
-    suspend fun loadSexualHealthForDate(context: Context, date: LocalDate): Float {
+    suspend fun loadSexualHealthForDate(context: Context, date: LocalDate): Float = withContext(Dispatchers.IO) {
         val dateKey = date.format(dateFormatter)
         val jsonString = context.dataStore.data.first()[DAILY_SEXUAL_HEALTH_COUNTS] ?: "{}"
         val json = JSONObject(jsonString)
-        return json.optDouble(dateKey, 0.0).toFloat()
+        json.optDouble(dateKey, 0.0).toFloat()
     }
 
-    suspend fun loadRecentSexualHealthCounts(context: Context): Map<String, Float> {
+    suspend fun loadRecentSexualHealthCounts(context: Context): Map<String, Float> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data.first()[DAILY_SEXUAL_HEALTH_COUNTS] ?: "{}"
         val json = JSONObject(jsonString)
         val countsMap = mutableMapOf<String, Float>()
         json.keys().forEach { dateKey ->
             countsMap[dateKey] = json.getDouble(dateKey).toFloat()
         }
-        return countsMap
+        countsMap
     }
 
     // --- Import / Export ---
-    suspend fun exportAllData(context: Context): String {
+    suspend fun exportAllData(context: Context): String = withContext(Dispatchers.IO) {
         val prefs = context.dataStore.data.first()
         val exportJson = JSONObject()
         prefs.asMap().forEach { (key, value) ->
             exportJson.put(key.name, value)
         }
-        return exportJson.toString()
+        exportJson.toString()
     }
 
-    suspend fun importAllData(context: Context, jsonString: String) {
+    suspend fun importAllData(context: Context, jsonString: String) = withContext(Dispatchers.IO) {
         val json = JSONObject(jsonString)
         context.dataStore.edit { prefs ->
             // Clear existing data? Or merge? Let's overwrite for simple restore.
@@ -361,7 +391,7 @@ object StorageHelper {
 
     // --- Events Functions ---
 
-    suspend fun saveEvents(context: Context, events: List<Event>) {
+    suspend fun saveEvents(context: Context, events: List<Event>) = withContext(Dispatchers.IO) {
         val jsonArray = JSONArray()
         events.forEach { event ->
             val obj = JSONObject()
@@ -377,7 +407,7 @@ object StorageHelper {
         }
     }
 
-    suspend fun loadEvents(context: Context): List<Event> {
+    suspend fun loadEvents(context: Context): List<Event> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data.first()[EVENTS] ?: "[]"
         val jsonArray = JSONArray(jsonString)
         val events = mutableListOf<Event>()
@@ -390,13 +420,13 @@ object StorageHelper {
             val isRecurring = obj.optBoolean("isRecurring", false)
             events.add(Event(id, title, date, time, isRecurring))
         }
-        return events
+        events
     }
 
 
     // --- Gomi (Garbage) Schedule ---
 
-    suspend fun saveGarbageSchedule(context: Context, schedule: Map<String, List<String>>) {
+    suspend fun saveGarbageSchedule(context: Context, schedule: Map<String, List<String>>) = withContext(Dispatchers.IO) {
         val jsonObject = JSONObject()
         schedule.forEach { (day, types) ->
             val jsonArray = JSONArray()
@@ -408,7 +438,7 @@ object StorageHelper {
         }
     }
 
-    suspend fun loadGarbageSchedule(context: Context): Map<String, List<String>> {
+    suspend fun loadGarbageSchedule(context: Context): Map<String, List<String>> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data.first()[GARBAGE_SCHEDULE] ?: "{}"
         val jsonObject = JSONObject(jsonString)
         val schedule = mutableMapOf<String, List<String>>()
@@ -424,12 +454,12 @@ object StorageHelper {
             }
             schedule[day] = types
         }
-        return schedule
+        schedule
     }
 
     // --- Vault Functions ---
 
-    suspend fun saveVaultEntries(context: Context, entries: List<VaultEntry>) {
+    suspend fun saveVaultEntries(context: Context, entries: List<VaultEntry>) = withContext(Dispatchers.IO) {
         val jsonArray = JSONArray()
         entries.forEach { entry ->
             val obj = JSONObject()
@@ -442,7 +472,7 @@ object StorageHelper {
         }
     }
 
-    suspend fun loadVaultEntries(context: Context): List<VaultEntry> {
+    suspend fun loadVaultEntries(context: Context): List<VaultEntry> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data.first()[VAULT_ENTRIES] ?: "[]"
         val jsonArray = JSONArray(jsonString)
         val entries = mutableListOf<VaultEntry>()
@@ -452,7 +482,7 @@ object StorageHelper {
             val text = obj.getString("secretText")
             entries.add(VaultEntry(id, text))
         }
-        return entries
+        entries
     }
 
 }

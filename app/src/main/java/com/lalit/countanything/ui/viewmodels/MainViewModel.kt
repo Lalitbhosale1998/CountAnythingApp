@@ -56,9 +56,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val monthlySavings: StateFlow<Map<String, Float>> = _monthlySavings.asStateFlow()
 
     // --- Reactive Calculation: Days Until Salary ---
+    // --- Reactive Calculation: Days Until Salary ---
+    private val _salaryHolidays = MutableStateFlow(0)
+    val salaryHolidays: StateFlow<Int> = _salaryHolidays.asStateFlow()
+
     val daysUntilSalary: StateFlow<Long?> = _salaryDay
         .map { date -> calculateDaysUntil(date) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val workingDaysUntilSalary: StateFlow<Long?> = combine(_salaryDay, _salaryHolidays) { date, holidays ->
+        calculateWorkingDaysUntil(date, holidays)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _salaryOneWayFare = MutableStateFlow(0f)
+    val salaryOneWayFare: StateFlow<Float> = _salaryOneWayFare.asStateFlow()
+
+    val projectedCommuteCost: StateFlow<Float> = combine(workingDaysUntilSalary, _salaryOneWayFare) { workingDays, fare ->
+        if (workingDays != null) {
+            (workingDays * (fare * 2)) // One way * 2 * working days
+        } else {
+            0f
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     // --- State: Goals ---
     private val _goalTitle = MutableStateFlow("Buy Toyota GR86 SZ Manual")
@@ -141,8 +160,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (today.dayOfMonth > day) {
                     nextDate = nextDate.plusMonths(1)
                 }
+                if (today.dayOfMonth > day) {
+                    nextDate = nextDate.plusMonths(1)
+                }
                 _salaryDay.value = nextDate
             }
+            _salaryHolidays.value = StorageHelper.loadSalaryHolidays(context)
+            _salaryOneWayFare.value = StorageHelper.loadSalaryOneWayFare(context)
             
             _genericCounters.value = StorageHelper.loadGenericCounters(context)
 
@@ -225,10 +249,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- Actions: Salary ---
-    fun updateSalaryDay(newDate: LocalDate) {
+    fun updateSalaryDay(newDate: LocalDate, holidays: Int, oneWayFare: Float) {
         _salaryDay.value = newDate
+        _salaryHolidays.value = holidays
+        _salaryOneWayFare.value = oneWayFare
         viewModelScope.launch {
             StorageHelper.saveSalaryDay(context, newDate.dayOfMonth)
+            StorageHelper.saveSalaryHolidays(context, holidays)
+            StorageHelper.saveSalaryOneWayFare(context, oneWayFare)
         }
     }
 
@@ -244,12 +272,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (today.dayOfMonth > salaryDayOfMonth) {
                 nextSalaryDate = nextSalaryDate.plusMonths(1)
             }
-            nextSalaryDate = when (nextSalaryDate.dayOfWeek) {
-                DayOfWeek.SATURDAY -> nextSalaryDate.minusDays(2)
-                DayOfWeek.SUNDAY -> nextSalaryDate.plusDays(1)
-                else -> nextSalaryDate
-            }
+            // For simple calendar days, we just want the distance
             ChronoUnit.DAYS.between(today, nextSalaryDate)
+        }
+    }
+
+    private fun calculateWorkingDaysUntil(date: LocalDate?, holidays: Int): Long? {
+        return date?.let { d ->
+            val today = LocalDate.now()
+            val salaryDayOfMonth = d.dayOfMonth
+            var nextSalaryDate = today.withDayOfMonth(salaryDayOfMonth)
+            if (today.dayOfMonth > salaryDayOfMonth) {
+                nextSalaryDate = nextSalaryDate.plusMonths(1)
+            }
+            
+            // Calculate total days excluding weekends
+            var workingDays = 0L
+            var currentDate = today.plusDays(1) // Start counting from tomorrow? or today? usually typically from "now"
+            // Let's count days in range (today, nextSalaryDate]
+            while (!currentDate.isAfter(nextSalaryDate)) {
+                 if (currentDate.dayOfWeek != DayOfWeek.SATURDAY && currentDate.dayOfWeek != DayOfWeek.SUNDAY) {
+                     workingDays++
+                 }
+                 currentDate = currentDate.plusDays(1)
+            }
+            
+            // Subtract custom holidays
+            (workingDays - holidays).coerceAtLeast(0)
         }
     }
     

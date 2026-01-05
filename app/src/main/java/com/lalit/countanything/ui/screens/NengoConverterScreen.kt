@@ -1,11 +1,13 @@
 package com.lalit.countanything.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,17 +18,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lalit.countanything.ui.components.springyTouch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-// Precise Era Definitions
+// Precise Era Definitions (Preserved)
 enum class JapanEra(
     val kanji: String, 
     val english: String, 
@@ -38,8 +45,6 @@ enum class JapanEra(
     SHOWA("昭和", "Showa", LocalDate.of(1926, 12, 25), LocalDate.of(1989, 1, 7)),
     TAISHO("大正", "Taisho", LocalDate.of(1912, 7, 30), LocalDate.of(1926, 12, 25)),
     MEIJI("明治", "Meiji", LocalDate.of(1868, 1, 25), LocalDate.of(1912, 7, 29)); 
-    // Meiji start is complex due to lunar calendar, but 1868-01-25 is widely accepted start of Meiji 1, 
-    // though Gregorian adoption was Meiji 6 (1873). For simple converter we stick to this.
 
     companion object {
         fun fromDate(date: LocalDate): JapanEra? {
@@ -56,17 +61,19 @@ enum class JapanEra(
 fun NengoConverterScreen(
     onBack: () -> Unit
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    
-    // State
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Logic
+    // Cyberpunk Theme Colors
+    val neonPink = Color(0xFFFF4081)
+    val bgDark = Color(0xFF101010)
+    val panelBg = Color(0xFF1E1E1E)
+
+    // Logic (Preserved)
     val eraObj = JapanEra.fromDate(selectedDate)
     val eraYearDisplay = if (eraObj != null) {
         val y = selectedDate.year - eraObj.start.year + 1
-        if (y == 1) "元年 (1)" else y.toString()
+        if (y == 1) "元年" else y.toString()
     } else {
         "?"
     }
@@ -83,10 +90,10 @@ fun NengoConverterScreen(
                     datePickerState.selectedDateMillis?.let { millis ->
                         selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
                     }
-                }) { Text("OK") }
+                }) { Text("CONFIRM", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDatePicker = false }) { Text("CANCEL", fontFamily = FontFamily.Monospace) }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -94,23 +101,29 @@ fun NengoConverterScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
-                title = { Text("Nengo Converter", fontWeight = FontWeight.Bold) },
+            CenterAlignedTopAppBar(
+                title = { 
+                    Text(
+                        "TIME_WARP // MAINFRAME", 
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        letterSpacing = (-0.5).sp
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = neonPink)
                     }
                 },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = bgDark,
+                    titleContentColor = neonPink
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = bgDark
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -122,75 +135,76 @@ fun NengoConverterScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 1. RESULT TICKET
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = RoundedCornerShape(24.dp)
+            // 1. RESULT TERMINAL (Tech Card)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(CutCornerShape(topStart = 0.dp, bottomEnd = 24.dp))
+                    .background(panelBg)
+                    .border(1.dp, neonPink.copy(alpha = 0.5f), CutCornerShape(topStart = 0.dp, bottomEnd = 24.dp))
             ) {
                 Column(
-                    modifier = Modifier.padding(32.dp),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "SELECTED DATE",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                        letterSpacing = 2.sp
+                        "> TARGET_DATE_LOCKED",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        color = neonPink
                     )
                     
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
-                        text = selectedDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(top = 8.dp)
+                        text = selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
                     )
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
                     
                     if (eraObj != null) {
-                        Spacer(modifier = Modifier.height(32.dp))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                         // Tech Divider
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(neonPink.copy(alpha = 0.3f)))
                         Spacer(modifier = Modifier.height(32.dp))
                         
                         Text(
-                            "JAPANESE ERA",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                            letterSpacing = 2.sp
+                            "> JAPAN_ERA_DETECTED",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            color = Color.Gray
                         )
 
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 text = eraObj.kanji,
-                                style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black),
-                                color = MaterialTheme.colorScheme.primary
+                                fontFamily = FontFamily.Default, // Kanji needs normal font
+                                style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black),
+                                color = neonPink,
+                                fontSize = 64.sp
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "$eraYearDisplay 年",
-                                style = MaterialTheme.typography.displaySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                text = "$eraYearDisplay",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 48.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                         }
                         
-                         Text(
-                            text = "${selectedDate.monthValue}月 ${selectedDate.dayOfMonth}日", // Month Day
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-
                         Text(
-                            text = "${eraObj.english} $eraYearDisplay",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            text = "(${eraObj.english.uppercase()} PERIOD)",
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = neonPink.copy(alpha = 0.7f),
+                            letterSpacing = 2.sp
                         )
                     } else {
                          Spacer(modifier = Modifier.height(32.dp))
-                         Text("Pre-Meiji or Future", style = MaterialTheme.typography.bodyLarge)
+                         Text("[ERROR: DATE_OUT_OF_RANGE]", fontFamily = FontFamily.Monospace, color = Color.Red)
                     }
                 }
             }
@@ -198,44 +212,66 @@ fun NengoConverterScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // 2. INPUT BUTTON
-            OutlinedButton(
+            Button(
                 onClick = { showDatePicker = true },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp)
+                    .height(56.dp)
+                    .springyTouch(),
+                shape = CutCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                ),
+                border = BorderStroke(1.dp, neonPink)
             ) {
-                Icon(Icons.Default.EditCalendar, null)
+                Icon(Icons.Default.EditCalendar, null, tint = neonPink)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Change Date", style = MaterialTheme.typography.titleMedium)
+                Text("MODIFY_TEMPORAL_COORDINATES", fontFamily = FontFamily.Monospace, color = neonPink)
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
             
-            // 3. QUICK JUMPS
-            Text("Quick Jumps", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
+            // 3. QUICK JUMPS (Terminal Commands)
+            Text(
+                "> EXECUTE_QUICK_JUMP", 
+                fontFamily = FontFamily.Monospace, 
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             
             val quickDates = listOf(
-                "Today" to LocalDate.now(),
-                "Reiwa Start" to LocalDate.of(2019, 5, 1),
-                "Heisei Start" to LocalDate.of(1989, 1, 8),
-                "Showa Start" to LocalDate.of(1926, 12, 25)
+                "NOW" to LocalDate.now(),
+                "REIWA_01" to LocalDate.of(2019, 5, 1),
+                "HEISEI_01" to LocalDate.of(1989, 1, 8),
+                "SHOWA_01" to LocalDate.of(1926, 12, 25)
             )
             
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 quickDates.chunked(2).forEach { rowItems ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         rowItems.forEach { (label, date) ->
-                            SuggestionChip(
-                                onClick = { selectedDate = date },
-                                label = { Text(label) },
-                                modifier = Modifier.weight(1f),
-                                icon = { Icon(Icons.Default.History, null, modifier = Modifier.size(16.dp)) }
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp)
+                                    .clickable { selectedDate = date }
+                                    .background(panelBg)
+                                    .border(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    label, 
+                                    fontFamily = FontFamily.Monospace, 
+                                    color = Color.White,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
                     }
                 }

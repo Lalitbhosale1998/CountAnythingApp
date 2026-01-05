@@ -43,9 +43,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun FinanceScreen(
     daysUntilSalary: Long?,
+    workingDaysUntilSalary: Long?,
+    projectedCommuteCost: Float,
     currencySymbol: String,
     salaryDay: LocalDate?,
-    onSetSalaryDate: () -> Unit,
+    onSetSalaryDate: (LocalDate, Int, Float) -> Unit,
     monthlySalaries: Map<String, Float>,
     monthlySavings: Map<String, Float>,
     onSaveFinancialData: (YearMonth, Float, Float) -> Unit,
@@ -70,6 +72,9 @@ fun FinanceScreen(
     var showCustomEditDialog by remember { mutableStateOf(false) }
     var showCustomAddDialog by remember { mutableStateOf(false) }
     var showCustomDatePicker by remember { mutableStateOf(false) }
+    var showSalaryDatePicker by remember { mutableStateOf(false) }
+    var showHolidayDialog by remember { mutableStateOf(false) }
+    var tempSelectedDate by remember { mutableStateOf<LocalDate?>(null) } 
     var pulseTrigger by remember { mutableLongStateOf(0L) }
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
@@ -104,11 +109,12 @@ fun FinanceScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp) // Added horizontal padding
-            .padding(bottom = 100.dp), // Extra padding for bottom
+            .padding(horizontal = 16.dp), // Added horizontal padding
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+            // ... (Content) ...
+
             // --- 0. FINANCE HEADER (Summary) ---
             AnimatedItem(index = 0) {
                 FinanceHeader(
@@ -123,10 +129,14 @@ fun FinanceScreen(
 
             // --- 1. SALARY COUNTDOWN ---
             AnimatedItem(index = 1) {
+
                 CountdownModule(
                     title = stringResource(R.string.days_until_salary),
                     targetDate = salaryDay,
-                    onEditDate = onSetSalaryDate
+                    workingDays = workingDaysUntilSalary,
+                    commuteCost = projectedCommuteCost,
+                    currencySymbol = currencySymbol,
+                    onEditDate = { showSalaryDatePicker = true }
                 )
             }
 
@@ -215,7 +225,7 @@ fun FinanceScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(120.dp))
         }
 
     // --- DIALOGS ---
@@ -322,5 +332,36 @@ fun FinanceScreen(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+    
+    // --- SALARY DATE PICKER & HOLIDAYS FLOW ---
+    if (showSalaryDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = salaryDay?.toEpochDay()?.times(24 * 60 * 60 * 1000) ?: System.currentTimeMillis()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showSalaryDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        tempSelectedDate = LocalDate.ofEpochDay(it / (24 * 60 * 60 * 1000))
+                        showSalaryDatePicker = false
+                        showHolidayDialog = true
+                    }
+                }) { Text("Next") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showHolidayDialog && tempSelectedDate != null) {
+        HolidayInputDialog(
+            onDismiss = { showHolidayDialog = false },
+            onConfirm = { holidays, fare ->
+                onSetSalaryDate(tempSelectedDate!!, holidays, fare)
+                showHolidayDialog = false
+            }
+        )
     }
 }

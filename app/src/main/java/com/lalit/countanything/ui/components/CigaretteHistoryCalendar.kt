@@ -99,7 +99,7 @@ fun HabitHistoryCalendar(
         colors = CardDefaults.cardColors(containerColor = if (aura != null) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Box(modifier = Modifier.fillMaxWidth().then(if (aura != null) Modifier.background(aura) else Modifier)) {
-            Column(modifier = Modifier.padding(24.dp)) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
@@ -119,9 +119,9 @@ fun HabitHistoryCalendar(
             Spacer(modifier = Modifier.height(12.dp))
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.height((6 * 52).dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.height(380.dp)
             ) {
                 items(calendarDays) { day ->
                     when (day) {

@@ -1,21 +1,22 @@
 package com.lalit.countanything.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.scaleIn
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Highlight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonetizationOn
@@ -25,19 +26,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lalit.countanything.ui.components.springyTouch
 import com.lalit.countanything.R
+import com.lalit.countanything.ui.components.springyTouch
 
 data class ToolItem(
     val id: String,
@@ -49,7 +51,6 @@ data class ToolItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-
 fun ToolsScreen(
     onToolSelected: (String) -> Unit,
     isVaultVisible: Boolean = false
@@ -61,55 +62,55 @@ fun ToolsScreen(
             add(
                 ToolItem(
                     id = "speed_dashboard",
-                    title = "Speed Dashboard", // Using string resources usually better, but keeping it simple for this dynamic block or needing context
+                    title = "SPEED_DASH",
                     icon = Icons.Default.Speed,
-                    description = "Monitor velocity and movement",
-                    color = Color(0xFF00E5FF)
+                    description = "VELOCITY // G_FORCE",
+                    color = Color(0xFF00E5FF) // Cyan
                 )
             )
             add(
                 ToolItem(
                     id = "coin_flip",
-                    title = "Coin Flip",
+                    title = "COIN_OPS",
                     icon = Icons.Default.MonetizationOn,
-                    description = "Heads or Tails? Decide now",
-                    color = Color(0xFFFFD700)
+                    description = "BINARY_DECISION_UNIT",
+                    color = Color(0xFFFFD700) // Gold
                 )
             )
             add(
                 ToolItem(
                     id = "morse_code",
-                    title = "Morse Code",
+                    title = "MORSE_TX",
                     icon = Icons.Default.Highlight,
-                    description = "Text to light/sound converter",
-                    color = Color(0xFF4CAF50)
+                    description = "OPTICAL_TRANSMITTER",
+                    color = Color(0xFF76FF03) // Lime
                 )
             )
             add(
                 ToolItem(
                     id = "nengo_converter",
-                    title = "Nengo Converter",
+                    title = "TIME_WARP",
                     icon = Icons.Default.CalendarMonth,
-                    description = "Japanese Era conversion",
-                    color = Color(0xFFE91E63)
+                    description = "ERA_CONVERSION_SYS",
+                    color = Color(0xFFFF4081) // Pink
                 )
             )
             add(
                 ToolItem(
                     id = "man_yen_visualizer",
-                    title = "Man-Yen Visualizer",
+                    title = "WEALTH_VIZ",
                     icon = Icons.Default.MonetizationOn,
-                    description = "Visualize Japanese currency stacks",
-                    color = Color(0xFFFFD700)
+                    description = "ASSET_STACK_RENDER",
+                    color = Color(0xFFFFAB00) // Amber
                 )
             )
             add(
                 ToolItem(
                     id = "shrine_guide",
-                    title = "Shrine & Temple Guide",
+                    title = "SPIRIT_GUIDE",
                     icon = Icons.Default.TempleHindu,
-                    description = "Interactive etiquette guide",
-                    color = Color(0xFFEF5350)
+                    description = "ETIQUETTE_PROTOCOL",
+                    color = Color(0xFFFF5252) // Red
                 )
             )
             
@@ -117,10 +118,10 @@ fun ToolsScreen(
                 add(
                     ToolItem(
                         id = "hidden_vault",
-                        title = "Hidden Vault",
+                        title = "SECURE_VAULT",
                         icon = Icons.Default.Lock,
-                        description = "Secure storage for private counters",
-                        color = Color(0xFF607D8B)
+                        description = "ENCRYPTED_STORAGE_V2",
+                        color = Color(0xFF607D8B) // Blue Grey
                     )
                 )
             }
@@ -133,17 +134,21 @@ fun ToolsScreen(
             LargeTopAppBar(
                 title = {
                     Text(
-                        stringResource(R.string.title_tools_utilities),
-                        fontWeight = FontWeight.Bold
+                        "LAB_BENCH // v.3.0",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-1).sp
                     )
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Color(0xFF101010), // Deep Dark Background
+                    scrolledContainerColor = Color(0xFF151515),
+                    titleContentColor = Color.White
                 )
             )
-        }
+        },
+        containerColor = Color(0xFF121212) // Lab Dark Mode
     ) { innerPadding ->
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 160.dp),
@@ -159,52 +164,64 @@ fun ToolsScreen(
         ) {
             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                 Text(
-                    stringResource(R.string.header_sensors),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    "> SYSTEM_MODULES_ONLINE",
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF00E5FF),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
             
             items(tools) { tool ->
-                M3ToolCard(tool = tool, onClick = { onToolSelected(tool.id) })
+                LabModuleCard(tool = tool, onClick = { onToolSelected(tool.id) })
             }
         }
     }
 }
 
 @Composable
-fun M3ToolCard(
+fun LabModuleCard(
     tool: ToolItem,
     onClick: () -> Unit
 ) {
+    // Blinking effect for "status light"
+    val infiniteTransition = rememberInfiniteTransition(label = "blink")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "led"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(180.dp)
             .springyTouch(),
-        shape = RoundedCornerShape(28.dp),
+        shape = CutCornerShape(topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp, topStart = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = Color(0xFF1E1E1E)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Flat M3 style
+        border = BorderStroke(1.dp, tool.color.copy(alpha = 0.5f))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clickable(onClick = onClick)
         ) {
-            // Background Gradient Splash
+            // "Scanline" gradient overlay
             Box(
                 modifier = Modifier
-                    .size(150.dp)
-                    .offset(x = (-20).dp, y = (-20).dp)
-                    .clip(CircleShape)
+                    .fillMaxWidth()
+                    .height(40.dp)
                     .background(
-                        Brush.radialGradient(
+                        Brush.verticalGradient(
                             colors = listOf(
-                                tool.color.copy(alpha = 0.2f),
+                                tool.color.copy(alpha = 0.1f),
                                 Color.Transparent
                             )
                         )
@@ -214,62 +231,79 @@ fun M3ToolCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Header: Icon Box
+                // Top Row: ID + Status Light
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "ID-${tool.id.take(4).uppercase()}",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        color = Color.White.copy(alpha = 0.5f)
+                    )
+                    
+                    // Status LED
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(tool.color.copy(alpha = alpha)) // Animated alpha
+                    )
+                }
+
+                // Middle: Icon
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(tool.color.copy(alpha = 0.15f)),
+                        .size(48.dp)
+                        .border(1.dp, tool.color.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = tool.icon,
                         contentDescription = null,
                         tint = tool.color,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Content
-                Column {
-                    Text(
-                        text = tool.title,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-0.5).sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    Text(
-                        text = tool.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.size(24.dp)
                     )
                 }
                 
-                // Action Arrow (Bottom Right)
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.BottomEnd
-                ) {
-                    Icon(
-                        Icons.Default.ArrowForward,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                        modifier = Modifier.size(20.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Bottom: Title & Desc
+                Column {
+                    Text(
+                        text = tool.title,
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    
+                    Text(
+                        text = tool.description,
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 10.sp,
+                        color = tool.color.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+            
+            // Decorative Corner
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(24.dp)
+                    .background(tool.color.copy(alpha = 0.2f))
+            )
         }
     }
 }

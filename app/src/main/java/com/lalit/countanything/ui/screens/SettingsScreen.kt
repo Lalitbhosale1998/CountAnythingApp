@@ -1,5 +1,8 @@
 package com.lalit.countanything.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -7,38 +10,32 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.os.LocaleListCompat
-import android.Manifest
-import android.os.Build
-import android.content.pm.PackageManager
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import com.lalit.countanything.Currency
 import com.lalit.countanything.NotificationScheduler
 import com.lalit.countanything.R
 import com.lalit.countanything.SettingsManager
 import com.lalit.countanything.StorageHelper
 import com.lalit.countanything.Theme
-import com.lalit.countanything.ui.components.AnimatedColumn
-import com.lalit.countanything.ui.components.AnimatedItem
 import com.lalit.countanything.ui.components.springyTouch
 import kotlinx.coroutines.launch
 
@@ -47,18 +44,19 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     settingsManager: SettingsManager
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    // --- State Observation ---
     val theme by settingsManager.theme.collectAsState(initial = Theme.SYSTEM)
     val isAppLockEnabled by settingsManager.isAppLockEnabled.collectAsState(initial = false)
     val isPrivacyModeEnabled by settingsManager.isPrivacyModeEnabled.collectAsState(initial = false)
     val isDailyReminderEnabled by settingsManager.isDailyReminderEnabled.collectAsState(initial = false)
     val selectedCurrency by settingsManager.currency.collectAsState(initial = Currency.YEN)
+    val userName by settingsManager.userName.collectAsState(initial = "User")
 
-    
-    val themes = Theme.values()
-    val supportedLanguages = listOf("en" to "English", "ja" to "日本語")
-    val context = LocalContext.current
-
+    // --- Launchers (Preserved Logic) ---
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
         onResult = { uri ->
@@ -101,7 +99,6 @@ fun SettingsScreen(
         }
     )
 
-    // Notification Permission Launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
@@ -112,14 +109,13 @@ fun SettingsScreen(
                 }
             } else {
                 Toast.makeText(context, "Notifications won't be sent without permission", Toast.LENGTH_SHORT).show()
-                scope.launch { settingsManager.setDailyReminderEnabled(false) } // Revert toggle
+                scope.launch { settingsManager.setDailyReminderEnabled(false) }
             }
         }
     )
 
     fun onDailyReminderToggle(enabled: Boolean) {
         if (enabled) {
-            // Check for permission on Android 13+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val permission = Manifest.permission.POST_NOTIFICATIONS
                 if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
@@ -131,7 +127,6 @@ fun SettingsScreen(
                     notificationPermissionLauncher.launch(permission)
                 }
             } else {
-                // Pre-Android 13, no runtime permission needed
                 scope.launch {
                     settingsManager.setDailyReminderEnabled(true)
                     NotificationScheduler.scheduleDailyReminder(context)
@@ -145,383 +140,362 @@ fun SettingsScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-        // --- HEADER SECTION ---
-
-
-        AnimatedColumn(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp) // Increased spacing for bubbles
+    // --- Content ---
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeTopAppBar(
+                title = { 
+                    Text(
+                        "Settings",
+                        fontWeight = FontWeight.SemiBold
+                    ) 
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Spacer(modifier = Modifier.statusBarsPadding().height(2.dp))
-
-            // --- APPEARANCE GROUP (Deep Purple) ---
-            SettingsGroup(
-                title = stringResource(R.string.settings_appearance),
-                icon = Icons.Default.Palette,
-                containerColor = Color(0xFF5E35B1),
-                contentColor = Color.White
-            ) {
-                // Theme Setting
-                SettingsRow(
-                    label = stringResource(R.string.theme),
-                    icon = Icons.Default.AutoAwesome
-                ) {
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        themes.forEachIndexed { index, item ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = themes.size),
-                                onClick = { scope.launch { settingsManager.setTheme(item) } },
-                                selected = theme == item,
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = Color.White,
-                                    activeContentColor = Color(0xFF5E35B1),
-                                    inactiveContainerColor = Color.White.copy(alpha = 0.2f),
-                                    inactiveContentColor = Color.White
-                                )
-                            ) {
-                                Text(item.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                }
-
-                // Currency Setting
-                SettingsRow(
-                    label = stringResource(R.string.settings_currency),
-                    icon = Icons.Default.AccountBalanceWallet
-                ) {
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        space = 4.dp
-                    ) {
-                        Currency.values().forEachIndexed { index, curr ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = Currency.values().size),
-                                onClick = { scope.launch { settingsManager.setCurrency(curr) } },
-                                selected = selectedCurrency == curr,
-                                label = { Text(text = curr.symbol, fontWeight = FontWeight.Bold) },
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = Color.White,
-                                    activeContentColor = Color(0xFF5E35B1),
-                                    inactiveContainerColor = Color.White.copy(alpha = 0.2f),
-                                    inactiveContentColor = Color.White
-                                )
-                            )
-                        }
-                    }
+            
+            // --- PROFILE HEADER ---
+            item {
+                UserProfileHeader(name = userName) { newName ->
+                    scope.launch { settingsManager.setUserName(newName) }
                 }
             }
 
-
-
-            // --- NOTIFICATIONS GROUP (Orange) ---
-            SettingsGroup(
-                title = stringResource(R.string.notifications),
-                icon = Icons.Default.Notifications,
-                containerColor = Color(0xFFF57C00),
-                contentColor = Color.White
-            ) {
-                SettingsToggleRow(
-                    label = stringResource(R.string.daily_reminder_title),
-                    icon = Icons.Default.NotificationsActive,
-                    checked = isDailyReminderEnabled,
-                    onCheckedChange = { onDailyReminderToggle(it) }
+            // --- APPEARANCE ---
+            item {
+                SettingsSectionTitle("Appearance")
+                
+                // Theme
+                M3SettingsItem(
+                    title = "App Theme",
+                    subtitle = theme.name.lowercase().replaceFirstChar { it.uppercase() },
+                    icon = Icons.Outlined.Palette,
+                    iconColor = Color(0xFF6750A4), // M3 Purple
+                    onClick = { 
+                         // Cycle through themes for simplicity or show dialog. 
+                         // Implementing simple toggle for now or logic to switch next.
+                         val nextTheme = when(theme) {
+                             Theme.LIGHT -> Theme.DARK
+                             Theme.DARK -> Theme.SYSTEM
+                             Theme.SYSTEM -> Theme.LIGHT
+                         }
+                         scope.launch { settingsManager.setTheme(nextTheme) }
+                    }
                 )
-                 Text(
-                    text = stringResource(R.string.daily_reminder_subtitle),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(start = 40.dp, top = 4.dp) // Indent to align with text
+
+                // Currency
+                M3SettingsItem(
+                    title = "Currency",
+                    subtitle = "Active: ${selectedCurrency.symbol} ($selectedCurrency)",
+                    icon = Icons.Outlined.Paid,
+                    iconColor = Color(0xFF2E7D32), // Green
+                    onClick = {
+                        val nextCurrency = Currency.values()[(selectedCurrency.ordinal + 1) % Currency.values().size]
+                        scope.launch { settingsManager.setCurrency(nextCurrency) }
+                    }
+                )
+                
+                 // Language
+                M3SettingsItem(
+                    title = "Language",
+                    subtitle = "English / 日本語",
+                    icon = Icons.Outlined.Language,
+                    iconColor = Color(0xFF00695C), // Teal
+                    onClick = {
+                       // Toggle simple logic for demo
+                       val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                       val newLang = if (currentLocale.contains("ja")) "en" else "ja"
+                       val appLocale = LocaleListCompat.forLanguageTags(newLang)
+                       AppCompatDelegate.setApplicationLocales(appLocale)
+                    }
                 )
             }
 
-            // --- LOCALIZATION GROUP (Vibrant Blue) ---
-            SettingsGroup(
-                title = stringResource(R.string.settings_localization),
-                icon = Icons.Default.Translate,
-                containerColor = Color(0xFF1E88E5),
-                contentColor = Color.White
-            ) {
-                SettingsRow(
-                    label = stringResource(R.string.language),
-                    icon = Icons.Default.Translate
-                ) {
-                    val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-                    val currentLang = if (currentLocale.isEmpty()) "en" else currentLocale
-
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        supportedLanguages.forEachIndexed { index, (langCode, langName) ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = supportedLanguages.size),
-                                onClick = {
-                                    val appLocale = LocaleListCompat.forLanguageTags(langCode)
-                                    AppCompatDelegate.setApplicationLocales(appLocale)
-                                },
-                                selected = currentLang.startsWith(langCode),
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = Color.White,
-                                    activeContentColor = Color(0xFF1E88E5),
-                                    inactiveContainerColor = Color.White.copy(alpha = 0.2f),
-                                    inactiveContentColor = Color.White
-                                )
-                            ) {
-                                Text(langName, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // --- SECURITY GROUP (Vibrant Pink) ---
-            SettingsGroup(
-                title = stringResource(R.string.security),
-                icon = Icons.Default.Lock,
-                containerColor = Color(0xFFD81B60),
-                contentColor = Color.White
-            ) {
-                // App Lock Toggle
-                SettingsToggleRow(
-                    label = stringResource(R.string.app_lock),
-                    icon = Icons.Default.Lock,
+            // --- SECURITY ---
+            item {
+                SettingsSectionTitle("Security")
+                
+                M3SettingsSwitch(
+                    title = "App Lock",
+                    subtitle = "Require biometrics to open",
+                    icon = Icons.Outlined.Lock,
+                    iconColor = Color(0xFFB71C1C), // Red
                     checked = isAppLockEnabled,
                     onCheckedChange = { scope.launch { settingsManager.setAppLockEnabled(it) } }
                 )
 
-                // Privacy Mode Toggle
-                SettingsToggleRow(
-                    label = stringResource(R.string.settings_privacy_mode),
-                    icon = Icons.Default.VisibilityOff,
+                M3SettingsSwitch(
+                    title = "Privacy Mode",
+                    subtitle = "Hide sensitive values",
+                    icon = Icons.Outlined.VisibilityOff,
+                    iconColor = Color(0xFFC2185B), // Pink
                     checked = isPrivacyModeEnabled,
                     onCheckedChange = { scope.launch { settingsManager.setPrivacyModeEnabled(it) } }
                 )
             }
 
-            // --- DATA MANAGEMENT GROUP (Teal) ---
-            SettingsGroup(
-                title = stringResource(R.string.data_management),
-                icon = Icons.Default.GridView,
-                containerColor = Color(0xFF00897B),
-                contentColor = Color.White
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    DataActionCard(
-                        label = stringResource(R.string.export_data),
-                        icon = Icons.Default.FileUpload,
-                        modifier = Modifier.weight(1f),
-                        onClick = { exportLauncher.launch("CountAnything_Backup.json") },
-                         // Pass content color to ensure card adapts to the teal background
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White
-                    )
-                    DataActionCard(
-                        label = stringResource(R.string.import_data),
-                        icon = Icons.Default.FileDownload,
-                        modifier = Modifier.weight(1f),
-                        onClick = { importLauncher.launch("application/json") },
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White
-                    )
-                }
+            // --- NOTIFICATIONS ---
+            item {
+                SettingsSectionTitle("Notifications")
+                
+                M3SettingsSwitch(
+                    title = "Daily Reminder",
+                    subtitle = "Get notified at 8:00 AM",
+                    icon = Icons.Outlined.Notifications,
+                    iconColor = Color(0xFFE65100), // Orange
+                    checked = isDailyReminderEnabled,
+                    onCheckedChange = { onDailyReminderToggle(it) }
+                )
             }
 
-            // --- ABOUT SECTION (Blue Gray) ---
-            SettingsGroup(
-                title = stringResource(R.string.settings_about),
-                icon = Icons.Default.Info,
-                containerColor = Color(0xFF455A64),
-                contentColor = Color.White
-            ) {
+            // --- DATA ---
+            item {
+                SettingsSectionTitle("Data Management")
+                
+                M3SettingsItem(
+                    title = "Backup Data",
+                    subtitle = "Export to JSON file",
+                    icon = Icons.Outlined.Upload,
+                    iconColor = Color(0xFF1565C0), // Blue
+                    onClick = { exportLauncher.launch("CountAnything_Backup.json") }
+                )
+                
+                M3SettingsItem(
+                    title = "Restore Data",
+                    subtitle = "Import from JSON file",
+                    icon = Icons.Outlined.Download,
+                    iconColor = Color(0xFF0277BD), // Light Blue
+                    onClick = { importLauncher.launch("application/json") }
+                )
+            }
+
+            // --- FOOTER ---
+             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = stringResource(R.string.settings_app_version),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White
+                        text = "Version 1.0.0",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(
-                        text = stringResource(R.string.settings_made_with_love),
+                     Text(
+                        text = "Made with ❤️ by Antigravity",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
+// --- COMMPOSABLES ---
 
 @Composable
-fun SettingsGroup(
-    title: String,
-    icon: ImageVector,
-    containerColor: Color,
-    contentColor: Color,
-    content: @Composable ColumnScope.() -> Unit
+fun UserProfileHeader(
+    name: String,
+    onNameChange: (String) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp), // Bubble shape
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Flat and bold
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp), // Increased padding
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // Expressive Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = contentColor.copy(alpha = 0.9f),
-                    modifier = Modifier.size(32.dp) // Larger Icon
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall, // Bold Title
-                    fontWeight = FontWeight.Black,
-                    color = contentColor
-                )
-            }
-            
-            // Content
-            CompositionLocalProvider(LocalContentColor provides contentColor) {
-               content()
-            }
-        }
-    }
-}
-
-@Composable
-fun SettingsRow(
-    label: String,
-    icon: ImageVector,
-    action: @Composable (() -> Unit)? = null
-) {
-    val contentColor = LocalContentColor.current
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = contentColor.copy(alpha = 0.8f) // Use local content color
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.titleMedium, // Slightly larger text
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor // Use local content color
-            )
-        }
-        if (action != null) {
-            Spacer(modifier = Modifier.height(12.dp))
-            action()
-        }
-    }
-}
-
-@Composable
-fun SettingsToggleRow(
-    label: String,
-    icon: ImageVector,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    val contentColor = LocalContentColor.current
+    var showEditDialog by remember { mutableStateOf(false) }
+    
     Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .clickable { showEditDialog = true }
+            .padding(vertical = 8.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = contentColor.copy(alpha = 0.8f)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(64.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = name.take(1).uppercase(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
             Text(
-                text = label,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor
+                text = if(name.isNotBlank()) name else "User",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Tap to edit profile",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = contentColor, // Match thumb to content (White)
-                checkedTrackColor = Color.Black.copy(alpha = 0.3f), // Darker track for contrast
-                uncheckedThumbColor = contentColor.copy(alpha = 0.6f),
-                uncheckedTrackColor = Color.Black.copy(alpha = 0.1f)
-            )
+    }
+
+    if(showEditDialog) {
+        var tempName by remember { mutableStateOf(name) }
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Name") },
+            text = { 
+                OutlinedTextField(
+                    value = tempName, 
+                    onValueChange = { tempName = it },
+                    label = { Text("Your Name") }
+                ) 
+            },
+            confirmButton = {
+                Button(onClick = { onNameChange(tempName); showEditDialog = false }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Cancel") }
+            }
         )
     }
 }
 
 @Composable
-fun DataActionCard(
-    label: String,
+fun SettingsSectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
+    )
+}
+
+@Composable
+fun M3SettingsItem(
+    title: String,
+    subtitle: String? = null,
     icon: ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer
+    iconColor: Color,
+    onClick: () -> Unit
 ) {
-    Card(
-        modifier = modifier
-            .springyTouch()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        // Icon Container
+        Surface(
+            shape = CircleShape,
+            color = iconColor.copy(alpha = 0.1f),
+            modifier = Modifier.size(48.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                modifier = Modifier.size(32.dp),
-                tint = contentColor
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        // Text
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        
+        // Action/Arrow
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun M3SettingsSwitch(
+    title: String,
+    subtitle: String? = null,
+    icon: ImageVector,
+    iconColor: Color,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable { onCheckedChange(!checked) }
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = iconColor.copy(alpha = 0.1f),
+            modifier = Modifier.size(48.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
     }
 }
